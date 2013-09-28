@@ -6,7 +6,8 @@
 
 vEMan History
 -----------------------------------------
-TRUNK // TRUNK
+MASTER // MASTER
+	new: changed development CVS tool to GIT instead of SVN. GIT is so damn great.. 
 	new(!): The very first RC of vEMan v1.0 is near! ;o)
 	fix: Download-links for OVFtool
 	new: easy howto for Ubuntu added to INSTALL documentation
