@@ -1,0 +1,57 @@
+####################################################################################
+#  NAME:    TROUBLE
+#  PLACE:   docs/
+#  DESC:    Troubleshooting guide and hints
+####################################################################################
+
+Good to know:
+
+    You can start vEMan from the commandline! There are several
+    options available, simply check:
+    
+    $> ./vEMan --help
+
+    For the most problems I recommend to start vEMan from the commandline which
+    may help in many cases to find out the root problem of your issue.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A) vEMan doesn't start!
+
+    If vEMan cannot be started ensure you have the correct permissions:
+
+    $> cd [INSTALL-DIR]/vEMan_vXXX/
+    $> chmod -R +x vEMan ./libs/ ./vmapps/
+
+    You should then start vEMan from the commandline by:
+    
+    $> ./vEMan
+    
+    and take a briefly look on the output vEMan gives.
+
+C) Problem XYZ occurs!
+
+    Start vEMan from the commandline, check output and
+    
+    check the log file which is created within your home dir:
+
+    $> cat ~/.vEMan/vEMan.log
+
+D) Where is my vEMan start icon? -or- I want to re-install vEMan!
+
+    If you cannot find your Desktop icon of vEMan it should also be a copy within your vEMan directory.
+    If not or if you want to re-init the installation (reinstall) you can do so by:
+        $> [INSTALL-DIR]/vEMan --init
+
+E) vEMan does not work after an upgrade!
+
+    When that happens I hope you have read the corresponding UPGRADE guide? If you have followed the
+    guide you will have your old version in place so you can still use the working one to keep
+    productive. Ok so the most reasons for upgrade issues are that there were changes within the
+    config files of vEMan or you haven't followed the UPGRADE guide correctly.
+    
+    1. Read and follow the UPGRADE guide step-by-step!
+    2. start vEMan from the commmandline.
+    3. Check Output and Log (see A+C).
+    
+    

@@ -1,45 +1,51 @@
-# http://vEMan.nethna.de
-#---------------------------
-# Entries beginning with an exclamation mark (!) are either important, heavy or very useful changes in vEMan
-#
+##################################################################################################################
+#  NAME:    CHANGES
+#  PLACE:   ./
+#  DESC:    The vEMan changelog
+# 			Entries beginning with an exclamation mark (!) are either important,
+#			heavy changes or very useful changes in vEMan
 ###################################################################################################################
 
 vEMan History
 -----------------------------------------
-MASTER // MASTER
-	new: changed development CVS tool to GIT instead of SVN. GIT is so damn great.. 
-	new(!): The very first RC of vEMan v1.0 is near! ;o)
-	fix: Download-links for OVFtool
-	new: easy howto for Ubuntu added to INSTALL documentation
-	fix(!): re-coded ovftool handling because v2.0.1 was removed by VMware
-	new(!): added a brain for target servers you already contacted. it will
-		also show the last used server preselected for your convenience.
-		I like it so much ;o)
-	new(!): introduced a XML parser we need for the VM Editor - because of this and because
-		 vEMan will base on python in the future I change the requirements.
-		 from now on python at least v2.5 is a requirement for running all functions of vEMan
-		 This XML parser gives a little speed improvement when displaying the VMs information.
-	fix: some vars cleaning in sysvars_vEMan.cfgs
-	new(!): WHEN UPGRADING - READ THE UPGRADE GUIDE! The uservars_vEMan.cfg have changed
-	new: fixed fileaccess.pl because it returns absolutely no errorcode as return value. "Great" work VMware..
-	fix: be more tolerant when deploying OVF/OVA
-	new: added cpu core detection of ESX in hostinfo.pl
-	new: added a generic check for the power state as a new module
-	new(!): well long long LONG time it took and tried about 4 completely different concepts but now the
-			VM editor is near of ready to use and provides the following features:
-			- FUNCTIONAL but need some more validations (not bullet-proof):
-				- Detect & change RAM (will validate the max available RAM!)
-				- Detect & change Display Name
-				- Detect & change VM network (only first NIC supported atm)
-				- Detect & change number of CPUs (will validate the max available CPU cores!)
-			- PARTLY FUNCTIONAL / WORK-IN-PROGRESS: 
-				- Detect & change VNC console port and state
-			- KNOWN-ISSUES:
-				It needs some more work on flushing the caches but in the meantime use the refresh button
-				(several times) if the VM is still not in on/offline state e.g. That is not a specific
-				problem within the VM editor module but a generic one..
 
-	Have fun! And keep in mind: BUGSQUASHING-TIME IS NEAR FOR THE RC1!!
+MASTER // MASTER
+		new: changed development CVS tool to GIT instead of SVN. GIT is so damn great.. 
+		new: info header in all important documents
+		new(!): added a TROUBLEshooting file with important hints if you run into problems
+				AND: cleaned up README, UPGRADE, INSTALL accordingly
+		new(!): The very first RC of vEMan v1.0 is near! ;o)
+		fix: Download-links for OVFtool
+		new: easy howto for Ubuntu added to INSTALL documentation
+		fix(!): re-coded ovftool handling because v2.0.1 was removed by VMware
+		new(!): added a brain for target servers you already contacted. it will
+			also show the last used server preselected for your convenience.
+			I like it so much ;o)
+		new(!): introduced an XML parser we need for the VM Editor - because of this and because
+			 vEMan will base on python in the future I change the requirements.
+			 from now on python at least v2.5 is a requirement for running all functions of vEMan
+			 This XML parser gives a little speed improvement when displaying the VMs information.
+		fix: some vars cleaning in sysvars_vEMan.cfgs
+		new(!): WHEN UPGRADING - READ THE UPGRADE GUIDE! The uservars_vEMan.cfg have changed
+		new: fixed fileaccess.pl because it returns absolutely no errorcode as return value. "Great" work VMware..
+		fix: be more tolerant when deploying OVF/OVA
+		new: added cpu core detection of ESX in hostinfo.pl
+		new: added a generic check for the power state as a new module
+		new(!): well long long LONG time it took and tried about 4 completely different concepts but now the
+				VM editor is near of ready to use and provides the following features:
+				- FUNCTIONAL but need some more validations (not bullet-proof):
+					- Detect & change RAM (will validate the max available RAM!)
+					- Detect & change Display Name
+					- Detect & change VM network (only first NIC supported atm)
+					- Detect & change number of CPUs (will validate the max available CPU cores!)
+				- PARTLY FUNCTIONAL / WORK-IN-PROGRESS: 
+					- Detect & change VNC console port and state
+				- KNOWN-ISSUES:
+					It needs some more work on flushing the caches but in the meantime use the refresh button
+					(several times) if the VM is still not in on/offline state e.g. That is not a specific
+					problem within the VM editor module but a generic one..
+		
+		Have fun! And keep in mind: BUGSQUASHING-TIME IS NEAR (RC-1 will come...)!!
 
 v0.9.6  // 2013-03-25	new: some troubleshooting tip in upgrade guide
 			new(!): ATTENTION -> READ the UPGRADE guide when you have a 

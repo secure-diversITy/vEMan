@@ -1,7 +1,15 @@
+###########################################################################################
+#  NAME:    UPGRADE
+#  PLACE:   ./ and latest UPGRADE file within docs/
+#  DESC:    Upgrade guide and hints
+#           This Upgrade Guide is for >v0.9.5< and higher versions.
+#           If you want to upgrade from an older version than v0.9.5 you need to read the
+#           corresponding docs/UPGRADE_0.X.X-to-X.X.X depending on your current version!
+###########################################################################################
 
 Upgrading vEMan is easy ;-)
------------------------------------
 
+HINT:
 ***************************************************************************************************
 Keep in mind that vEMan is still in BETA state and so there can be:
 
@@ -13,17 +21,6 @@ That also means that in this state an upgrade may require manual changes and/or 
 configuration options and the behaviour of functions can change, too.
 ***************************************************************************************************
 
-Hint:
-Even if I encountered no problems when using VMware SDK for Perl Toolkit v4.x I recommend using v5.x for vEMan.
-
-Since v0.9.x vEMan is tested with VMware SDK for Perl v5.1 only.That means NOT that previous Perl Toolkits will 
-NOT work anymore - but it means I will not TEST previous SDKs anymore.
-
-This Upgrade Guide is for >v0.9.5< and higher versions.
-If you want to upgrade from an older version than v0.9.5 you need to read the corresponding docs/UPGRADE_0.X.X-to-X.X.X depending on your
-current version.
-
-########### UPGRADE-GUIDE ###########
 I highly recommend to upgrade this way:
 
 1) Rename your current vEMan folder, e.g.:
@@ -48,20 +45,6 @@ I highly recommend to upgrade this way:
 If the new vEMan version works as expected you can delete the folder you renamed in 1) otherwise
 you can easily switch back to the previous version.
 
-
-########### TROUBLESHOOTING-GUIDE ###########
-
-        1) If vEMan cannot be started ensure you have the correct permissions:
-
-	   $> cd [INSTALL-DIR]/vEMan_vXXX/
-       	   $> chmod -R +x vEMan ./libs/ ./vmapps/
-
-	2) Start vEMan from commmandline
-
-           $> ./vEMan (--help for options)
-
-	3) Check the log file which is created within your home dir:
-
-           $> less ~/.vEMan/vEMan.log
-	
+If you're running into problems you can take a look into docs/TROUBLE file on details for
+troubleshooting vEMan.
 

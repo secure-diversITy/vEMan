@@ -1,61 +1,58 @@
+####################################################################################
+#  NAME:    INSTALL
+#  PLACE:   ./
+#  DESC:    Installation guide and hints
+####################################################################################
 
-Please read the README file also inside this package.
+Please read the README file first(!).
 Within the README you will find all requirements you need to met before you can use vEMan.
 
 1) Install the requirements as described within the README
-	some hints about some specials:
-	a) use the following command to install VMware SDK:
-	   $> sudo -i (or su BUT NEVER sudo -s!)
-	   $> http_proxy="" ftp_proxy="" ./vmware-install.pl -d
+        some hints about some specials:
+        a) use the following command to install VMware SDK:
+           $> sudo -i (or su BUT NEVER sudo -s!)
+           $> http_proxy="" ftp_proxy="" ./vmware-install.pl -d
 
-	b) the VMware SDK HAVE TO end with the following message:
-		The installation of vSphere CLI 5.1.0 build-780721 for Linux completed 
-		successfully. You can decide to remove this software from your system at any 
-		time by invoking the following command: 
-		"/usr/bin/vmware-uninstall-vSphere-CLI.pl".
-		This installer has successfully installed both vSphere CLI and the vSphere SDK 
-		for Perl.
-	   (or similar but it HAVE TO be something like that! otherwise the install has not finished correctly)
+        b) the VMware SDK HAVE TO end with the following message:
+                The installation of vSphere CLI 5.1.0 build-780721 for Linux completed 
+                successfully. You can decide to remove this software from your system at any 
+                time by invoking the following command: 
+                "/usr/bin/vmware-uninstall-vSphere-CLI.pl".
+                This installer has successfully installed both vSphere CLI and the vSphere SDK 
+                for Perl.
+           (or similar but it HAVE TO be something like that! otherwise the install has not finished correctly)
 
 2) unpack vEMan in a temporary directory
         $> mv vEMan_vxX.tgz /tmp 
-	$> cd /tmp
-	$> tar xvzf vEMan_vxX.tgz
+        $> cd /tmp
+        $> tar xvzf vEMan_vxX.tgz
 
 3) start vEMan from within the temporary directory
         $> cd vEMan_vXXX/
         $> chmod +x && ./vEMan (the installer guides you through the rest of installation)
 
-4) start vEMan
-	Debug output:
-	$> [INSTALL-DIR]/vEMan
-	Normal startup:
-	Double click on the vEMan Desktop icon
+4) start vEMan after installation:
+        Double click on the vEMan Desktop icon :o)
 
 
-Troubleshooting:
+Installation problems:
 
-        If vEMan cannot be started ensure you have the correct permissions:
-	        $> cd [INSTALL-DIR]/vEMan_vXXX/
-       	 	$> chmod -R +x vEMan ./libs/ ./vmapps/
+    When you get an error message about proxy while installing the VMware SDK you need to use:
+        $> sudo http_proxy="" ftp_proxy="" ./vmware-install.pl
+           or (when you are user root)
+        $> http_proxy="" ftp_proxy="" ./vmware-install.pl
 
-	If you cannot find your Dekstop icon of vEMan you can simply re-init the installation by:
-		$> [INSTALL-DIR]/vEMan --init
+    When you can't get the OVFtool v2.0.1 even not with the hints from the README file you
+    can install OVFtool v3 instead. vEMan will start then but you can NOT deploy VMs but
+    using all other functions.
 
-	When you get an error message about proxy while installing
-	the VMware SDK you need to use:
-		- sudo http_proxy="" ftp_proxy="" ./vmware-install.pl
-		or (when you are user root)
-		- http_proxy="" ftp_proxy="" ./vmware-install.pl
+Distribution specific convenience hints:
 
-	Distribution specific:
+    on Fedora (17) you need to have those packages installed for vEMan and the VMware SDK:
+        $> sudo yum install libuuid-devel yad cpan perl-XML-LibXML 
 
-		on Fedora (17) you need to have those packages installed for vEMan and the VMware SDK:
-		- sudo yum install libuuid-devel yad cpan perl-XML-LibXML 
-
-		on Ubuntu (tested on 12.04) you should run this otherwise SDK will NOT install:
-		- sudo add-apt-repository ppa:webupd8team/y-ppa-manager
-		- sudo apt-get update
-		- sudo apt-get install yad libxml-libxml-perl libssl-dev
-
+    on Ubuntu (tested on 12.04) you should run this otherwise SDK will NOT install:
+        (for a recent yad version:) $> sudo add-apt-repository ppa:webupd8team/y-ppa-manager
+        $> sudo apt-get update
+        $> sudo apt-get install yad libxml-libxml-perl libssl-dev
 
