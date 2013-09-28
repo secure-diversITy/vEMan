@@ -1,0 +1,210 @@
+# this will try to build a VM list including the corresponding state
+# FKA: F_VMSTATE
+F_CRTVMLIST()
+{
+        F_GETCFG
+        F_DEC
+        F_CRTCOOKIE
+        unset ALLLIST
+
+        echo 50 >> $PRGRSFILE
+
+        #ALLLIST=$(echo -e "${USER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XLISTVM vi://$SRV/ 2>&1| egrep '^\ ' | sed 's/^.\ //g' | tr '\n' '|' | sort)
+        #ALLLIST=$(echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XLISTVM vi://$SRV/ 2>&1| egrep '^\ ' | sed 's/^.\ //g;s/$/|/g' | sort)
+
+        ALLLIST=$(all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --fields vmname |grep "Name:" | sed -e 's/[ \t]//g;s/Name://g')
+
+        # if the global all-list is empty we do not need to run to the whole online/offline detection
+        if [ -s "$ALLLIST" ];then
+                echo "DEBUG: your ESX server seems to be empty?!"
+#               SAVEIFS="$IFS"
+        else
+
+
+##########################
+#               # to avoid problesm with bad chars we will save ifs and set it to the above used separator
+#               # the other way to clean the VM list is not very good idea because then we will run in probs
+#               # later on to identify the VM
+#               #echo "current IFS is: $IFS"
+#               SAVEIFS="$IFS" && IFS=$(echo -e '\n\b|')
+#               #echo "changed IFS is: $IFS"
+#               
+#               for i in $(echo "$ALLLIST");do
+#                       TARGETVM="$i"
+#                       echo "DEBUG: target is $TARGETVM"
+#       
+#                       # when no caching file for online VMs exists create one and massage it's output
+                        if [ ! -e "$TMPonlinevms" ];then
+#                               https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)' |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//;s/^/|/g' > $TMPonlinevms
+                                #https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)' |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//' > $TMPonlinevms
+                                all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --powerstatus poweredOn --fields vmname |grep "Name:" | sed -e 's/[ \t]//g;s/Name://g' > $TMPonlinevms
+			else
+                                if [ ! -s "$TMPonlinevms" ];then
+                                        echo "DEBUG: onlinevm caching file size is zero. This is no error but if you experience problems you should delete $TMPonlinevms before starting vEMan the next time"
+                                fi
+                        fi
+                        if [ $? -ne 0 ];then
+                                echo "DEBUG: ERROR occured while creating onlinevm caching file"
+                                F_ERR "ERROR occured while creating onlinevm caching file"
+                        fi
+                echo 55 >> $PRGRSFILE
+
+                unset ONLINEVMS
+		# if filesize 0 unset onlinevms var (again)
+		if [ -s $TMPonlinevms ];then
+                	ONLINEVMS=$(sort $TMPonlinevms | tr "\n" ",")
+		else
+			unset ONLINEVMS
+		fi
+                echo 60 >> $PRGRSFILE
+
+		# when no caching file for suspended VMs exists create one and massage it's output
+                if [ ! -e "$TMPsleepingvms" ];then
+			all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --powerstatus suspended --fields vmname |grep "Name:" | sed -e 's/[ \t]//g;s/Name://g' > $TMPsleepingvms
+		else
+			if [ ! -s "$TMPsleepingvms" ];then
+				echo "DEBUG: Sleeping VMs caching file size is zero. This is no error but if you experience problems you should delete $TMPsleepingvms before starting vEMan the next time"
+			fi
+		fi
+		if [ $? -ne 0 ];then
+                	echo "DEBUG: ERROR occured while creating suspended VMs caching file"
+                        F_ERR "ERROR occured while creating suspended VMs caching file"
+                fi
+		echo 65 >> $PRGRSFILE
+
+		unset TIREDVMS
+		# if filesize 0 unset tiredvms var (again)
+		if [ -s $TMPsleepingvms ];then
+			TIREDVMS=$(sort $TMPsleepingvms | tr "\n" ",")
+		else
+			unset TIREDVMS
+		fi
+                echo 70 >> $PRGRSFILE
+        
+#                       if [ ! -z "$ONLINEVMS" ];then
+#                               for aON in $(echo "$ONLINEVMS");do
+#                                       echo "DEBUG: comparing with: >$aON<"
+#                                       if [ "$TARGETVM" != "$aON" ];then
+#                                               echo "DEBUG: No match for >$aON< found."
+#                                               ISON=0
+#                                       else
+#                                               echo "DEBUG: detected >$TARGETVM< as POWERED ON!"
+#                                               ISON=1
+#                                               break
+#                                       fi
+#                               done
+#                       else
+#                               echo "DEBUG: You have offline VMs only...?!"
+#                               ISON=0
+#                       fi
+#               
+#                       if [ "$ISON" -eq 0 ];then
+#                               echo "DEBUG: detected >$TARGETVM< as OFFLINE."
+#                               # save to array only when existing name in all list
+#                               echo "${OFFVMS[@]}"|grep "$TARGETVM" > /dev/null
+#                               if [ $? -ne 0 ];then
+#                                       echo "DEBUG: Entry missing in array."
+#                                       if [ -z "$OFFVMS" ];then
+#                                               OFFVMS=("$TARGETVM")
+#                                       else
+#                                               OFFVMS=("${OFFVMS[@]}","$TARGETVM")
+#                                       fi
+#                               else
+#                                       echo "DEBUG: match in array found already"
+#                               fi
+#                       fi
+#
+                all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --powerstatus poweredOff --fields vmname |grep "Name:" | sed -e 's/[ \t]//g;s/Name://g' > $TMPofflinevms
+                unset OFFVMS
+		# if filesize 0 unset offvms var (again)
+		if [ -s $TMPofflinevms ];then
+	                OFFVMS=$(sort $TMPofflinevms | tr "\n" ",")
+		else
+			unset OFFVMS
+		fi
+
+                echo "DEBUG: online are: $ONLINEVMS"
+                echo "DEBUG: offline are: ${OFFVMS[@]}"
+
+#               done
+
+                echo 80 >> $PRGRSFILE
+
+                # massage the first entry because otherwise the output will not match $YAD
+#               IFS="$SAVEIFS"
+
+                # prepare online vm output
+                PR1_ONVMS=$(echo "$ONLINEVMS" | sed s/,\$//g)
+		if [ ! -z $PR1_ONVMS ];then
+	                PR_ONVMS=("$PIC_ON"\\n${PR1_ONVMS[@]//,/\\n$PIC_ON\\n})
+		else
+			echo "DEBUG: Picture-Mapping has no online VMs found (PR1_ONVMS is empty)."
+			unset PR_ONVMS
+		fi
+
+                # prepare suspended vm output
+		PR1_SLEEPVMS=$(echo "$TIREDVMS" | sed s/,\$//g)
+		if [ ! -z $PR1_SLEEPVMS ];then
+        		PR_SLEEPVMS=("$PIC_SLEEP"\\n${PR1_SLEEPVMS[@]//,/\\n$PIC_SLEEP\\n})
+		else
+			echo "DEBUG: Picture-Mapping has no suspended VMs found (PR1_SLEEPVMS is empty)."
+			unset PR_SLEEPVMS
+                fi
+
+                # prepare offline vm output
+                PR1_OFFVMS=$(echo "$OFFVMS" | sed s/,\$//g)
+		if [ ! -z $PR1_OFFVMS ];then
+                	PR_OFFVMS=("$PIC_OFF"\\n${PR1_OFFVMS[@]//,/\\n$PIC_OFF\\n})
+		else
+			echo "DEBUG: Picture-Mapping has no offline VMs found (PR1_OFFVMS is empty)."
+			unset PR_OFFVMS
+                fi
+                echo "ENABLED VMs:"
+                echo "${PR_ONVMS[@]}"
+		
+		echo "SLEEPING VMs:"
+		echo "${PR_SLEEPVMS[@]}"
+
+                echo
+                echo "DISABLED VMs:"
+                echo "${PR_OFFVMS[@]}"
+
+        fi
+
+        if [ -z "$PR_ONVMS" ];then
+                if [ -z "$PR_OFFVMS" ];then
+			if [ -z "$PR_SLEEPVMS" ];then
+	                        echo "DEBUG: Woops the ESX server is completely empty?"
+        	                PWRLIST=()
+			else
+				echo "DEBUG: oh a tired ESX.. sleeping VMs only.."
+				PWRLIST=(${PR_SLEEPVMS[@]})
+			fi
+                else
+			if [ -z "$PR_SLEEPVMS" ];then
+	                        echo "DEBUG: No online and no sleeping VMs on your ESX server.."
+                        	PWRLIST=(${PR_OFFVMS[@]})
+			else
+				echo "DEBUG: No online VMs but offline and sleeping ones"
+				PWRLIST=(${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
+			fi
+                fi
+        else
+                if [ -z "$PR_OFFVMS" ];then
+                        echo "DEBUG: cool you have online VMs only.."
+                        PWRLIST=(${PR_ONVMS[@]})
+                else
+			if [ -z "$PR_SLEEPVMS" ];then
+	                        echo "DEBUG: building 1 list of online and offline VMs.."
+	                        PWRLIST=(${PR_ONVMS[@]}\\n${PR_OFFVMS[@]})
+			else
+				echo "DEBUG: building 1 list of online, suspended and offline VMs.."
+				PWRLIST=(${PR_ONVMS[@]}\\n${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
+			fi
+                fi
+        fi
+        echo 90 >> $PRGRSFILE
+#       IFS="$SAVEIFS"
+}
+
+export -f F_CRTVMLIST

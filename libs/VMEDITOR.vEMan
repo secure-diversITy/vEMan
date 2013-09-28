@@ -1,0 +1,285 @@
+# this opens the vm editor
+F_VMEDITOR()
+{
+    F_GETCFG
+    # add a progress bar because with perl SDK its fu..ing long..
+    PRGRSFILE="${PRGRSFILE}_vmeditor"
+    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=650 --progress --progress-text="Collecting and converting VM information..." --auto-kill --auto-close &
+    echo 5 > ${PRGRSFILE}
+
+    # check if VM is offline (again)
+    unset PWRSTATE
+    F_CHKPWR "$TARGETVM"
+    echo "power is: $PWRSTATE"
+    if [ "x${PWRSTATE}" == "xoff" ];then
+      echo "DEBUG: Powerstate ok. going on..."
+      echo 10 >> $PRGRSFILE
+    else
+      echo 100 >> $PRGRSFILE
+      F_MSG "Oops state is $PWRSTATE. Well you cannot edit a VM when it is online or suspended.\nPlease turn the VM off and try again."
+      exit
+    fi
+    echo 15 >> $PRGRSFILE
+    unset VMEDIT VMEDERR
+    if [ -z "$TARGETVM" ]||[ -z "$PTARGXML" ];then
+            echo " DEBUG: ERROR: No VM host selected or XML file has gone.."
+            MSG="ERROR ($OPERR) You haven't selected a target VM or the XML file has gone. try again\n"
+            $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+            echo 100 >> $PRGRSFILE
+            exit
+    fi
+    echo 20 >> $PRGRSFILE
+    # get a list of available datacenters
+    ESXDCS=$(https_proxy="" $XVIFS --sessionfile $AUTHSESS --server $SRV --listdc)
+    DCCNT=$(echo $ESXDCS | wc -l)
+    echo 30 >> $PRGRSFILE
+    # if more than one DC was detected the user needs to choose the correct one
+    if [ ! -z "$ESXDCS" ];then
+      if [ "$DCCNT" -eq 1 ];then
+        USEDC="$ESXDCS"
+        echo 40 >> $PRGRSFILE
+        echo "DEBUG: Only available datacenter is $USEDC so no need to bother user."
+      # well normally not needed to do an 'eq' again but to be totally sure.. i do so ;o)
+      elif [ "$DCCNT" -gt 1 ];then
+        echo 40 >> $PRGRSFILE
+        ESXDCCB=$(echo "$ESXDCS" |sed '/^$/d;/[[:space:]]/d' | tr '\n' '\!' | sed 's/!$//g')
+        ESXDC=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Choose Datacenter)" --width=600 --form \
+                --text "We detected more than 1 datacenter.\nPlease choose the datacenter of the selected VM or type it in manually:\n" \
+                --field="Selected system":RO $TARGETVM \
+                --field="Detected Datacenters":CBE "$ESXDCCB"\
+                --button="Save":77 \
+                --button="Cancel":1 \
+                --always-print-result)
+        DCERR=$?
+        echo "DEBUG: selected VM was $TARGETVM, answer was $DCERR settings was: $ESXDC" 
+        # if user aborts or clicking on Go back button we set the VMANS manually
+        # (we could also use break here but .. well there are so many ways..
+        if [ "$DCERR" -eq 252 ]||[ "$DCERR" -eq 222 ];then
+          exit $DCERR
+        elif [ -z "$ESXDC" ]; then
+          echo 100 >> $PRGRSFILE
+          F_MSG "No Datacenter choosen! ABORTED."
+          exit
+        fi
+        USEDC=$(echo "$ESXDC" | cut -d"|" -f2)
+      fi
+    fi
+
+  # validate usedc to be sure
+  [ -z "$USEDC" ]&& F_MSG "OOOPS. DC variable USEDC is empty?! ABORTED!" && exit 1
+  echo 50 >> $PRGRSFILE
+
+  # fetch the VMX
+  XMLVMPATH=$($PYPARS --readxml -x $PTARGXML -m xmltag -t vmPathName)
+  XMLSTOR=$(echo $XMLVMPATH|cut -d" " -f1|sed 's/\[//g;s/\]//g')
+  XMLVMX=$(echo $XMLVMPATH|cut -d" " -f2)
+  # the downloaded vmx file - we leave it untouched see next var
+  LOCDLVMX="$VMCDIR/${TARGETVM}.vmx-dl"
+  # the vmx working copy
+  LOCNEWVMX="$VMCDIR/${TARGETVM}.vmx-new"
+  # the vmx we will later on upload
+  LOCUPLVMX="$VMCDIR/${TARGETVM}.vmx-up"
+  # the argument file for yad to workaround stupidness of yad
+  YADREST="$VMCDIR/${TARGETVM}.yadrest"
+  # the ESX info XML
+  XMLESX="$VMCDIR/${TARGETVM}.esxinfo"
+  https_proxy="" $XFILEACC --sessionfile "$AUTHSESS" --server $SRV --datacentername "$USEDC" --operation get --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCDLVMX"
+  if [ $? -ne 0 ];then
+    echo 100 >> $PRGRSFILE
+    F_MSG "\n\nAn error occured while downloading settings file.      \nPlease check logfile at:\n\n $FLOG"
+    exit
+  fi
+  echo 70 >> $PRGRSFILE
+  # duplicate vmx
+  cp -f $LOCDLVMX $LOCNEWVMX
+
+  # array space separated VMX values we want to get and edit
+  # order is important! new vars needs to be also parsed in "present changeable data" section!
+  ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus RemoteDisplay.vnc.enabled)
+
+  # get relevant data
+  unset VMXVALG VMXVAL
+  VMXARR=()
+  for VMXVAL in $(echo ${ARRVMVARS[@]});do
+    # parse XML and find matches
+    VMXVALG=$(grep $VMXVAL $LOCNEWVMX)
+    if [ ! -z "$VMXVALG" ];then
+      if [ ! -z "$VMXARR" ];then
+        VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+        VMXARR=(${VMXARR[@]},$VMXVALG)
+      else
+        VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+        VMXARR=($VMXVALG)
+      fi
+    fi
+  done
+  echo 75 >> $PRGRSFILE
+  # present changeable data
+  while [ -z "$EDITANS" ];do
+    # break out if aborted
+    [ "$RETEDIT" == "222" ]||[ "$RETEDIT" == "252" ]&& break
+    # else ask (again)
+    echo "$TARGETVM" >$YADREST
+    # special shit. the number of CPUs are not a required field in a VMX
+    # so it could be that it is NOT set! But we still need to ensure we see valid data
+    echo "${VMXARR[@]}" |grep numvcpus >/dev/null
+    if [ $? -eq 0 ];then
+      echo "DEBUG: numvcpus are set. ok."
+    else
+      echo "DEBUG: numvcpus are not set. will do so."
+      XMLCPUNO=$($PYPARS --readxml -x $PTARGXML -m xmltag -t noCPU)
+      VMXARR=(${VMXARR[@]},$XMLCPUNO)
+    fi
+    echo "${VMXARR[@]}" |tr -d '\"' | sed 's/,/\n/g' >> $YADREST
+    sed -i 's/^[[:space:]]*//g' $YADREST
+
+    # detect networks and VNC
+    F_SCANNET
+    echo 80 >> $PRGRSFILE
+    F_DETECTVNC "$TARGETVM" "detectonly"
+    echo 90 >> $PRGRSFILE
+    unset FMVNCPORT FMVNCSTATE
+    FMVNCPORT=$(grep "RemoteDisplay.vnc.port" $LOCNEWVMX)
+    if [ $? -eq 0 ];then
+      FMVNCSTATE=TRUE
+      FMVNCPORT=$(echo ${FMVNCPORT//*=/} | tr -d '"')
+      FLVNCPORT="--field=Console-Port"
+      FSVNCSTATE='Uncheck to disable'
+    else
+      FMVNCSTATE=FALSE
+      FSVNCSTATE='Check to enable'
+      unset FMVNCPORT
+    fi
+    echo $FMVNCSTATE >> $YADREST
+
+    # calculate possible values for the fields
+    # TODO !!!!
+    # CPU = integer
+    # RAM = integer
+    # Spaces in Display Name need to be converted to underscores
+    # VNC Port = integer --> validate if free?
+    # VNC enabled = F_DETECTVNC !
+    # TODO !!!!
+
+    echo 100 >> $PRGRSFILE
+    COMPPRE=($(cat $YADREST |tr "\n" "|"))
+    EDITANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=600 --form \
+            --text "Edit the settings you want to change only:\n" \
+            --field="Selected system":RO \
+            --field="RAM in Megabytes" \
+            --field="Display Name" \
+            --field="Network (eth0)":CBE "$NETS"\
+            $FLVNCPORT \
+            --field="Number of CPUs" \
+            --field="$FSVNCSTATE console:CHK" \
+            --button="Activate changes":77 \
+            --button="Cancel":1 \
+            --rest="$YADREST" \
+            --always-print-result))
+    RETEDIT=$?
+
+    # if user aborts or clicking on Go back button 
+    if [ "$RETEDIT" -eq 252 ]||[ "$RETEDIT" -eq 222 ]||[ "$RETEDIT" -eq 1 ];then
+      exit $RETEDIT
+    fi
+
+    echo "DEBUG: selected VM was $TARGETVM, answer was $RETEDIT settings was: $EDITANS" 
+    if [ "$COMPPRE" == "$EDITANS" ];then
+      echo "DEBUG: Nothing has changed!"
+    else
+      echo "DEBUG: There are changes"
+        # parse answer and write it in an array
+        # memsize displayName ethernet0.networkName RemoteDisplay.vnc.port
+        ARRNEWVMX=(memsize=\"$(echo "$EDITANS" | cut -d"|" -f2)\" \
+                    displayName=\"$(echo "$EDITANS" | cut -d"|" -f3)\" \
+                    ethernet0.networkName=\"$(echo "$EDITANS" | cut -d"|" -f4)\" \
+                    RemoteDisplay.vnc.port=\"$(echo "$EDITANS" | cut -d"|" -f5)\"\
+                    numvcpus=\"$(echo "$EDITANS" | cut -d"|" -f6)\"\
+                    RemoteDisplay.vnc.enabled=\"$(echo "$EDITANS" | cut -d"|" -f7)\"\
+                    )
+    fi
+  done
+
+  # Fetching ESX infos we need for validation
+  https_proxy="" $XHOSTINF --server $SRV --sessionfile $AUTHSESS --fields memoryusage,memorysize,cpucores --machinereadable --fileoutput $XMLESX
+  [ $? -ne 0 ] && F_MSG "ERROR while fetching ESX data for validation..ABORTED." && exit
+  # search and replace the changed values within VMX
+  for USRANS in "${ARRNEWVMX[@]}";do
+    SRCHSTR="${USRANS//=*/}"
+    VALSTR=$(echo "${USRANS//*=/}"|tr -d '"')
+    grep "$SRCHSTR" $LOCNEWVMX > /dev/null
+    if [ $? -eq 0 ];then
+      # special validations
+      case "$SRCHSTR" in
+        numvcpus)
+              echo "DEBUG: Reached number of CPU validation..."
+              MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+              #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
+              if [ "$VALSTR" -gt "$MAXCPUNO" ];then
+                F_MSG "Oops. Unfortunately the number of CPUs seems to be limited to \n         $MAXCPUNO cores.\nYour choice will be adapted accordingly for your convenience."
+                VALSTR="$MAXCPUNO"
+              fi
+              ;;
+        memsize)
+              echo "DEBUG: Reached number of RAM validation..."
+              PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
+              USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
+              MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
+              if [ "$VALSTR" -gt "$MAXMEM" ];then
+                F_MSG "Oops. Unfortunately the size of RAM seems to be limited to \n         $MAXMEM MB.\nYour choice will be adapted accordingly for your convenience."
+                VALSTR="$MAXMEM"
+              fi
+              ;;
+      esac
+      sed -i "s/$SRCHSTR.*/${SRCHSTR}\ =\ \"$VALSTR\"/g" $LOCNEWVMX
+    else
+      echo "$USRANS" >> $LOCNEWVMX
+    fi
+  done
+  unset LVMX LANS
+  # validate changed settings
+  # Must be done by the user.. May changing in the future but atm..
+  while [ -z "$LANS" ];do
+          LVMX=$($YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (Check VMX)" \
+                    --center --width=600 --height=800 --text \
+                    "\nThe following will show you the VMX file we will now upload.\nPlease check that it matches your needs and its correctness.\n\n" \
+                    --text-info \
+                    --button="Upload":33 \
+                    --button="Cancel":34 \
+                    --always-print-result < $LOCNEWVMX )
+          LANS=$?
+          echo "DEBUG: selected button id: $LANS"
+          if [ "$LANS" -eq 252 ]||[ "$LANS" -eq 34 ];then
+            echo "DEBUG: aborted by user" 
+            exit
+          fi
+  done
+  
+  if [ "$LANS" -eq 33 ];then
+    # check if VM is offline (again)
+    unset PWRSTATE
+    F_CHKPWR $TARGETVM
+    echo "power is: $PWRSTATE"
+    if [ "x${PWRSTATE}" == "xoff" ];then
+      echo "going on..."
+    else
+      F_MSG "Oops state is $PWRSTATE. My friend you cannot edit a VM when it is online or suspended.\nPlease turn the VM off and try again."
+      exit
+    fi
+    # upload changed settings
+    https_proxy="" $XFILEACC --sessionfile $AUTHSESS --server $SRV --datacentername ha-datacenter --operation put --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCNEWVMX"
+    if [ $? -eq 0 ];then
+      F_MSG "Congratulations. VM settings changed successfully.\n\nHINT:\nYou need to boot the VM to see the changed settings in vEMan."
+    else
+      # backup the original data to a persistent location name
+      cp -f $LOCDLVMX ${LOCDLVMX}_ORIGINALFILE
+      F_MSG "ERROR: There was an error while uploading the new settings!\nDon't worry a backup of the previous VMX can be found here:\n\n${LOCDLVMX}_ORIGINALFILE"
+    fi
+  else
+    F_MSG "DEBUG: oops very unusual! Check $FLOG!"
+    exit
+  fi
+  # TODO: flush vEMan caches!
+
+}
+export -f F_VMEDITOR

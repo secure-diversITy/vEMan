@@ -1,0 +1,6 @@
+# show the current version only
+F_VERSION()
+{
+	echo "$VERSION"
+}
+

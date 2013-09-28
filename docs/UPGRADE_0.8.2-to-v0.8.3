@@ -1,0 +1,40 @@
+
+Upgrading vEMan is easy ;-)
+-----------------------------------
+
+***************************************************************************************************
+Keep in mind that vEMan is currently in BETA state and so there can be heavy changes in:
+code, 
+file structure, 
+variables and
+files. 
+That means also that in this state an upgrade may require manual changes and/or re-adding your 
+configuration options and the behaviour of functions can change.
+***************************************************************************************************
+
+Even if I encountered no problems when using VMware SDK for Perl Toolkit v4.x I recommend using v5.x for vEMan.
+Since v0.8.2 vEMan is based on the current v5.0 VMware SDK for Perl that means my tests will be done for v5.x only.
+
+The v0.8.2 introduced VMCLIPATH variable was moved to the systemvars file instead of uservars file.
+
+That means I recommend to upgrade like this:
+1) Rename your current vEMan folder
+2) Create a new empty folder
+3) Download the new vEMan version
+4) unpack it to the created dir in 2)
+5) chmod -R +x vEMan ./libs/ ./vmapps/
+6) change the values in uservars_vEMan.cfg to match your installation (do NOT copy the old cfg file!)
+
+If the new vEMan version works as expected you can delete the folder you renamed in 1) otherwise 
+you can easily switch back to the previous version.
+
+#-----------------------------------------------------------------------
+
+The alternative upgrade option (NOT recommended):
+1) do all steps mentioned above from 1 to 4 (stop after 4)
+2) copy the old uservars_vEMan.cfg from your previous version and delete or outcomment the var: "VMCLIPATH". 
+3) Check carefully if you don't miss any variable (compare with the downloaded one maybe a diff -s .. ).
+
+If you do all fine vEMan will start - otherwise start vEman in a terminal to see which requirements can't be checked.
+I do not recommend that way because their can be problems occur later on which can be hard to find, so it would be 
+better to to the recommended way above.

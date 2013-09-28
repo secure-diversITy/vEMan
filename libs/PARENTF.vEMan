@@ -1,0 +1,12 @@
+# this will help to keep the parent function in order to return to it later on
+F_PARENTF()
+{
+        if [ ! -z "$1" ];then
+                PARENTF="$1"
+                echo "DEBUG: Last function was: $PARENTF"
+        else
+                PARENTF="F_ESXMGR"
+                echo "DEBUG: No parent function defined using global default."
+        fi
+}
+export -f F_PARENTF

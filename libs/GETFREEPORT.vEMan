@@ -1,0 +1,47 @@
+# Scan for a free port on ESX server which can then be used for VNC console
+F_GETFREEPORT()
+{
+	F_GETCFG
+        echo Doing a full Scan. This will take a while..
+
+        # NETCAT is SOOO DAMN GREAT!
+
+        for SCAN in $(seq 5900 5999);do
+                $XNC -vz $SRV $SCAN
+                if [ $? -ne 0 ];then
+                        VNCPORT=$SCAN
+                        echo "Find free port at: $VNCPORT"
+                        break
+                fi
+        done
+
+##### The next is very complicated, VERY slow and faulty. I will let it here because it will be needed as a fallback or similar.
+#
+#       for i in `https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l`;do
+#               echo $i |cut -d"/" -f5
+#               CMD=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV "$i" getguestinfo RemoteDisplay.vnc.port | grep RemoteDisplay.vnc.port |cut -d"=" -f 2 |tr -d " ")
+#               if [ ! -z "$CMD" ];then
+#                       array=("${array[@]}" "$CMD")
+#               fi
+#       done
+#       # ESX can handle VNC ports from 5900 to 5999. We try to find out which port is available.
+#        ESXPORTS=("${ESXPORTS[@]}" "$(seq 5900 5999)" )
+#       # Then find out the duplicates for the scanned and the general available ones
+#        DUPPORTS=( $( printf "%s\n" "${array[@]}" "${ESXPORTS[@]}" | awk 'x[$0]++ != 0' ) )
+#       # now we compare them and find out the first free port we can use
+#        for DUP in ${ESXPORTS[@]};do
+#                AVPORT=$(echo ${DUPPORTS[@]} |grep -o "$DUP")
+#                if [ -z "$AVPORT" ];then
+#                        VNCPORT=$DUP
+#                        echo "Find free port at: $VNCPORT"
+#                        break
+#                fi
+#        done
+#######
+
+        if [ -z "$VNCPORT" ];then
+                echo "ERROR: Cant find a free port at ESX server??!"
+                F_ERR "Can't find a free port at ESX server (F_GETFREEPORT)!"
+        fi
+}
+export -f F_GETFREEPORT

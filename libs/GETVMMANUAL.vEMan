@@ -1,0 +1,13 @@
+# fallback mechanism to get VM path if the VM was renamed e.g.
+F_GETVMMANUAL()
+{
+	F_GETCFG
+        MSG="Oh.. it seems that the VM is offline or was renamed after deploying it.\nNo problem so far but you have to select on the next screen the correct 'VMX name' in order to proceed."
+        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button='Open VMX list'
+
+        TARGETVM=$(echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l | sed -n "s/.*\(\/.*vmx\).*/\1/p" |tr -d "^/" | sort \
+                        | $YAD --window-icon="$LOGO" --title="vSphere for Linux (MANUAL VM selection)" --width=600 --height=800 --list --column="VMX name (can be different from your display name)" | cut -d "|" -f1)
+        F_GETVMPATH
+}
+
+export -f F_GETVMMANUAL

@@ -1,0 +1,25 @@
+# Disable VNC console on a given VM
+F_DISABLEVNC()
+{
+        F_GETCFG
+        echo 0 > $PRGRSFILE
+        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Disable console)" --width=650 --progress --progress-text="Disabling console..." --auto-kill --auto-close &
+
+        echo 10 >> $PRGRSFILE
+        F_GETVMPATH
+        echo 70 >> $PRGRSFILE
+        https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.enabled false 
+        VNCERR="$?"
+        if [ "$VNCERR" -eq 0 ];then
+                echo 100 >> $PRGRSFILE
+                MSG="Console was disabled successfully."
+                $YAD --window-icon="$LOGO" --title="$TITLE (Console disabled)" --on-top --center --text "$MSG" --button=OK
+        else            
+                echo 100 >> $PRGRSFILE
+                MSG="ERROR ($VNCERR) occured while disabling console..\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button=Close
+        fi
+
+}
+
+export -f F_DISABLEVNC

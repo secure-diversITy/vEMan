@@ -1,0 +1,333 @@
+# http://vEMan.nethna.de
+#---------------------------
+# Entries beginning with an exclamation mark (!) are either important, heavy or very useful changes in vEMan
+#
+###################################################################################################################
+
+vEMan History
+-----------------------------------------
+TRUNK // TRUNK
+	new(!): The very first RC of vEMan v1.0 is near! ;o)
+	fix: Download-links for OVFtool
+	new: easy howto for Ubuntu added to INSTALL documentation
+	fix(!): re-coded ovftool handling because v2.0.1 was removed by VMware
+	new(!): added a brain for target servers you already contacted. it will
+		also show the last used server preselected for your convenience.
+		I like it so much ;o)
+	new(!): introduced a XML parser we need for the VM Editor - because of this and because
+		 vEMan will base on python in the future I change the requirements.
+		 from now on python at least v2.5 is a requirement for running all functions of vEMan
+		 This XML parser gives a little speed improvement when displaying the VMs information.
+	fix: some vars cleaning in sysvars_vEMan.cfgs
+	new(!): WHEN UPGRADING - READ THE UPGRADE GUIDE! The uservars_vEMan.cfg have changed
+	new: fixed fileaccess.pl because it returns absolutely no errorcode as return value. "Great" work VMware..
+	fix: be more tolerant when deploying OVF/OVA
+	new: added cpu core detection of ESX in hostinfo.pl
+	new: added a generic check for the power state as a new module
+	new(!): well long long LONG time it took and tried about 4 completely different concepts but now the
+			VM editor is near of ready to use and provides the following features:
+			- FUNCTIONAL but need some more validations (not bullet-proof):
+				- Detect & change RAM (will validate the max available RAM!)
+				- Detect & change Display Name
+				- Detect & change VM network (only first NIC supported atm)
+				- Detect & change number of CPUs (will validate the max available CPU cores!)
+			- PARTLY FUNCTIONAL / WORK-IN-PROGRESS: 
+				- Detect & change VNC console port and state
+			- KNOWN-ISSUES:
+				It needs some more work on flushing the caches but in the meantime use the refresh button
+				(several times) if the VM is still not in on/offline state e.g. That is not a specific
+				problem within the VM editor module but a generic one..
+
+	Have fun! And keep in mind: BUGSQUASHING-TIME IS NEAR FOR THE RC1!!
+
+v0.9.6  // 2013-03-25	new: some troubleshooting tip in upgrade guide
+			new(!): ATTENTION -> READ the UPGRADE guide when you have a 
+				previous version of vEMan running (user settings cannot be upgraded)
+			new(!): added a simple user management:
+				- list users
+				- add a new user (including shell access and role)
+				- change user (password, role, shell access)
+				- added check for 8 chars in password because of ESX requirements (warn only)
+			new: added a simple info box handler (displays a message without 'Cancel' option)
+			fix: catching unusable OVF/VMX sources in VM deployment (this will NOT catch all deploy 
+				problems but will validate the OVF/VMX. It is possible that you have a valid 
+				OVF/VMX but it will not work together with your ESX (e.g. 'vmx-08' was not working 
+				in my ESXi v4.1. So in short atm the moment I will catch problems with the logical 
+				syntax of an OVF/VMX but do not test it against your target (that may never happen). 
+				I still need to implement a better error handling after the deploy process 
+				ended. Thats not that easy because of the yad progress bar etc.- we will see ;o) ). 
+			fix: even when error occured in VM deployment vEMan had tried to enable console
+			fix: when deploying a VM a source with special characters crashed vEMan
+			fix(!): when an empty VM-Status caching file exists vEMan shows always the status symbol 
+				(without a VM name)
+			        that may had result in strange displayed list in some special cases or the symbol 
+				was displayed even without a VM name (even when you know that there have to be one).
+			fix(!):	moved all caching files to the personal	ESX-folder (~/.vEMan/your-esx-server/) 
+				instead of having it all directly in the ~/.vEMan working dir. This will also ensure that 
+				'overlappings' (displaying VMs from another esx) will not happen in the future anymore.
+				This also may fix different other problems especially fixes all problems when running
+				vEMan twice or more the same time. This is possible from now on because session cookies
+				etc are all saved in the esx-working-dir.
+			fix: caching file for suspended VMs was not deleted when vEMan exited
+			fix: when deploying the scan for available network names with spaces within the name failed
+			fix: when you deploy a VM and select "Power on after deployed" the VM was not powered on
+			fix: display GUI info messages in the logfile, too
+			fix(!): deployment to ESX 5.1 was not possible
+			fix: added vEMan version info to log
+			fix(!): fixed several bugs regarding the VM list:
+				- When ESX has sleeping VMs ONLY
+				- When no online AND no sleeping VMs on your ESX server
+				- When no online VMs but offline AND sleeping ones
+			fix(!): Console not working with ESX 5.1 or higher (now displaying user howto for ESX-FW setup)
+
+v0.9.5 // 2012-12-06	fix: the VM online list not refreshes in all cases
+			fix: the VM suspended list never refreshes
+			fix: the VM offline list not refreshes in all cases
+
+v0.9.4 // 2012-10-06	fix(!): another converting bug.. disabling console was not working because of a damn carriage return..
+			new: Console manager will not stay open after click on action (open,disable,enable) instead closes automatically after pressed
+			fix: no popup anymore after closing console (VNC is not able to export a valid return code so we raise a warning only)
+			new(!): complete rewrite of power manager.. the manager will close automatically after choosing an action
+			new(!): when doing a power action (reboot,shutdown ...) 
+				the user will be prompted for confirmation now (before the action was performed without any confirmation)
+			new: added docs dir to the sysconfig
+			new: added an option for reviewing/rating vEMan
+			new: added a human readable license with the option to read the full one
+
+v0.9.3 // 2012-08-07	new(!): Detecting storages when deploying OVF/VMX
+        			That means we detect:
+			        - available storages on ESX
+			        - type of storage
+			        - capacity of storage
+			        - free space of storage
+			        vEMan offers the detected storages as a combo selection box with the option of manual filling
+			fix: Host Manager was not able to display 'not-ready-yet' message
+			new(!): Detecting networks when deploying OVF/VMX as a combo selection box with the option of manual filling
+			new/fix: Well the suspended VMs were not displayed anymore - I believe because of a change a while ago.
+	 			 This is working again now and vEMan displays a cool suspend icon for them ;o)			
+			new(!): introducing the ESX Host Manager (displays information only atm):
+					- boottime
+					- cpumodel, cpuspeed, cpuusage
+					- memorysize, memoryusage
+					- maintenancemode, rebootrequired, software (which ESX version is running)
+			new: added a NOTREADY function for features which are planned but not fully implemented
+
+v0.9.1 // 2012-07-26	fix(!): Snapshots should work again!
+			fix(!): beeing more robust when detecting VM paths.. (fixes some errors when you have multiple VMs where
+				the name is mainly the same. E.g. when you have VM01 and VM01-dev then you ran into problems
+				when it comes to open console, power settings, etc which is fixed now
+			fix: When clicking on 'ESX Manager' nothing has happened because of typo in module name
+			new: updated UPGRADE guide to reflect changes to the new vEMan installer
+			new: updated INSTALL guide to reflect the same and added INIT info to enforce a new installation
+
+v0.9.0 // 2012-07-17	new: display license banner when executed first time
+			new: started to code a simple installer for vEMan			
+			new: enforce first time startup by --init option
+			new(!): yeeeeha.. Delete VM's is available now (VM Manager) -> tested with not renamed VMs
+			fix: keep-alive handler was not working as expected in some cases which results in connection loss
+			fix: after deploying OVF/VMX dialog was not closed automatically
+			new: added a mini help in vEMan main window
+			new: settings for OVF/VMX deployment are saved in a ESX specific directory and prefilled next time
+			new: refresh VM list after deleting a VM
+			fix: added a info box that deploying the VM succeeded
+			fix: some minor code cleanups
+
+v0.8.5 // 2012-07-03	fix: vEMan can started from everywhere now! -> very good for e.g. creating a desktop shortcut
+			fix: if path contains spaces vEMan failed to start 
+			fix: moved certs dir to the user config dir instead of the vEMan path
+			fix: if certs directory does not exist create it
+			fix: removed direct OVF deployment at login popup (too much problems)
+			fix: renamed log file and moved place to the vEMan settings dir (I try to separate things)
+			new(!): Big change behind the scenes: 
+				I have splitted all functions out of runFUNCTION in order to get more clean code
+				and better handling even in case of updating.
+			new: added Control-C and/or 'SIGINT' detection and do a clean exit
+			fix: in some cases the keepalive handler have not stopped
+			fix: no progress bar when deploying OVF/VMX
+			fix: when trying to deploy a second OVF/VMX the previous settings were always taken
+			new: sort online and offline VMs alphabetically
+			new: thanks to the splitting of all modules it is possible now to start a specific
+				module of vEMan with the syntax: "./vEMan <FUNCTION NAME>"
+				e.g: "./vEMan F_DEPLOVF"
+				This makes troubleshooting a module much easier..
+			new: added a HELP to vEMan to explain the commandline possibilities
+			fix: removed Proxy line because it seems no one needs that and would take 
+				(too) much time to implement for a maybe unused feature.
+
+v0.8.4 // 2012-05-14	fix: added 'yad' to requirement check and therfor to sysvars
+				and replaced hardcoded yad cmd with variable.
+			fix(!): added a keepalive function so the session will not time-out anymore
+				by default it do a keepalive every 2 minutes which is working fine for me.
+				You can adjust that setting in etc/sysvars_vEMan.cfg (examples are described there)
+			new: example commands in the latest upgrade guide, some changes in README und INSTALL
+
+v0.8.3 // 2012-04-27 	The major reason for this update is because of PERL. Before v0.8.2 I was working on 
+			Ubuntu 11.04 and had no problems using vEMan. But last week I decided to upgrade to 11.10
+			because of the upcoming 12.04 release and well the problems started.. I can't even connect
+			to my ESX servers anymore but it still worked on my 10.04 Lucid server.. First thought was the 
+			VMware Perl Toolkit by VMware, because I changed that to v5.0 from 4.1, too but it has made
+			no difference. I then come to some Forum entries pointing to maybe a certificate-verify issue
+			and so I tried to integrate a cert-downloader with the option to import that ESX certificate
+			somewhere - /etc/ssl/certs e.g. Well I tried a lot around this part but never got a successful
+			connection.
+			Doing searches in the web again and again and then finally found a sooo simple solution that it
+			hurts :o) So, have fun with vEMan v0.8.3 - it may work now on machines where you saw the error
+			"Server version unavailable at [....]" before ..
+
+			fix: download link for OVFtool (VMware has changed URL to myvmware)
+			new: added download link when ovftool is missing
+			new(!): SSL-certificate-checking is DISABLED by default now. 
+				This avoid the annoying error: "Server version unavailable at esx......"
+				If you want to enable strict SSL certificate checking adjust the variable: 
+				PERL_LWP_SSL_VERIFY_HOSTNAME=1 (instead of "0") in "etc/sysvars_vEMan.cfg"
+			new: fetching the SSL certificate from the ESX (saved to ./certs) 
+				Well that was mainly a try to get the above error solved but you can use
+				it to copy the downloaded certificate to your local cert-store - 
+				don't forget that if you want to do strict cert checking you also need to adjust 
+				the above variable to "1"
+			new(!): Deploying the VMware apps together with vEMan! This is made possible because of:
+				http://communities.vmware.com/viewwebdoc.jspa?documentID=DOC-10141
+				Because of this I moved the corresponding path variable from
+				"etc/uservars_vEMan.cfg" to "etc/sysvars_vEMan.cfg" to keep the uservars file
+				small and simple
+			fix: description for all main variables in etc/sysvars_vEMan.cfg added
+			new: speeding up the first auth check by using connect.pl instead of a full VM scan
+			fix: in case of auth error the old logon screen was shown
+			fix: wrong user/pw will be detected now and a meaningful message is displayed instead 
+				of the generic one
+			fix(!): when the user enters a wrong password he cannot login even with the correct password 
+				until he closes and open vEMan again
+			fix: detection if session file was created or not so vEMan will not start anymore in case of error.
+			new: added a copy of the CC license to vEMan
+
+v0.8.2 // 2012-04-20	new: I use the VMware Perl SDK v5.0 from now on for all my tests and new features so you may want 
+				to switch to v5 SDK, too which is recommended from now on.
+			new(!): supporting the display and management of VMs in resource pools 
+				(well ressource pools names will not be displayed atm).
+			fix: improved the detection of the VM on/off state
+			new(!): introduced the power manager - isn't that great :o)) I like it soo much
+				- start
+				- resume
+				- stop
+				- reset
+				- shutdown
+				- reboot
+				- standby
+			new(!): doubleclick on a VM displays useful information 
+				(CPU/RAM usage, vmtools state and much more..)
+			new(!): introduced the ! indicator in CHANGES file (this file) 
+				for important fixes / features /adjustments
+			new(!): restructering of the menu buttons and logic 
+				-> that means a doubleclick on a VM will open a VM Manager now:
+				- 1) VM information including CPU,... usage
+				- 2) Buttons for VM specific operations like console,power,....
+				- 3) removed those links from vEMan main screen
+				- 4) added buttons for the upcoming new features I'm working on like ESX management,VM editor
+			new: I proudly introduce the first official vEMan Logo at Logon screen and in title bar 
+				- I hope you like it ;o)
+			fix: renamed the main button to "Login" at the logon window (named "VM Magement" before)
+			new(!): introduced the snapshot manager - yeeha ;o)
+				- List current snapshots
+				- Create a new snapshot (without memory dump)
+				- Remove a selected snapshot (single)
+				- Remove a selected snapshot + all sub-snapshots (children)
+				- Revert to a selected snapshot
+
+v0.8.1 // 2012-04-12	fix(!): requirement checks were made but vEMan didnt exit when not ok
+			new: added version number in title
+
+v0.8.0 // 2012-04-11	new(!): WOW... took me 3 FULL days but now all VMs will:
+				- be checked for online/offline
+				- a status picture will be displayed before each VM! I like it soooo much ;o)
+				known issue is that suspended VMs will be displayed as OFF. For me it is not a prob
+				so if it is for you let me know ;o)
+			new(!): added a pics/ dir within vEman package for displaying on/off state
+			fix(!): whoo.. There were several errors and problems solved regarding the detection
+				and handling of Console sessions. Now everything should work as expected..
+				- detection changed to detect the enabled feature instead of port 
+				- activating console will enforce activation without further checking
+				- open console will now detect correctly if console is available or not
+				- duplicated usage of ports when enabling console
+			fix: return vEMan main window again after error msg for power settings
+			new: tested deployment of VMX (works like a charme..)
+			new: added an etc/ dir for vEMan 
+			new(!): splitted functions from code
+			new(!): created a function-runner
+			new(!): splitted system variables from code
+			new(!): WOOT... well i have changed everything regarding the function handling - this
+				is a really REALLY BIG change in code so I hope everything is still working for
+				you. Nevertheless this part was necessary to made because of new cool features and ease up debugging.
+			fix: the username var was changed to a unique one instead of $USER to avoid probs
+			new(!): we hash the password (AES 256 CNC) and save the hash in the settings file for better 
+				interaction of the new file/folder structure. This requires openssl from now on!
+			new: replaced 'Activate console','Disable console' and 'Open console' by 'Console Manager' at the vEMan
+				main screen because I need more space for other functions in vEMan that will come next.
+				--> two of them are the buttons 'Snapshot Manager' and 'Power Manager' which are placeholders atm
+			new(!): now it is possible to have more than 1 console window open at one time
+			new: added 'OVF/VMX Deploy' button to the main screen of vEMan
+			new: replaced 'Deploy OVF' and 'Deploy VMX' at the login window to 'Deploy OVF/VMX'
+			new: displaying a short help when mouse-over in the console-manager
+			new: added progress bar when collecting VM list data
+			fix: there was no error msg displayed when user not selected a VM for:
+				- console manager
+				- power manager
+				- snapshot manager
+			new: added a progress bar when vEMan is starting (preparing vEMan)
+			new: added an exit function for clean and defined exit
+			fix: in some circumstances the session data etc were not removed when exiting
+			fix: refresh VM list was not fresh enough
+			fix: when you started vEMan and wanted to close it you need to do that two times
+			fix: exiting vEMan was not possible in some cases
+			fix: some misunderstanding wording regarding the console
+
+v0.7.2 // 2012-03-27	NO-PUBLIC
+			new: added debug option (not fully working atm , ;o) )
+
+v0.7.1 // 2012-03-21	new: added link and update hint at login screen
+			fix: OVF deployment errors when network name or vm name containing spaces
+			fix: whoops.. OVF deployment created config only but ignores the disks..
+			new: checking for global and personal ovftool setting file
+			fix/new: the EULA of an OVF cannot be handled atm so we changed to autoaccept and give hint only
+			new: Deployment was set to autodetect - now VMX should starting to work (untested)..
+			fix: corrected info about user var file
+
+v0.7.0 // 2012-03-10	new: make 3rd party tool listVMbyFolder.pl obsolete!
+			new: added a progress bar when opening console
+			fix: when VM was renamed we cannot find the path
+			fix: when VM is offline we cannot find the path
+			new: added progress bar when enabling console
+			new: added a function to disable console
+			new: added progress bar when disabling console
+			fix: returncode from console access was not displayed
+			new: info when console was (de)activated
+
+v0.6.0 // 2012-02-21	new: prefill ovf source selection with last used file/URL
+			new: precheck of requirements for all binaries
+			new: preparation for public releasing
+			fix: some cosmetic changes and cosmetic enhancements
+			fix: removed some unused code
+			new: enabled VMX deployment in untested mode
+			new: if VNC console cannot be opened the user can enable it on-the-fly
+			new: separated changelog from code
+			new: splitted user variables from code to separate file for easier updating/using
+			
+v0.5.0 // 2012-02-14	fix: problems when wrong credentials entered
+			new: complete restructured error handling and enhanced error output
+			fix: when a VM was renamed we can't find the VM-path
+			fix: problems in main window (selection was made but ignored)
+			fix: session file was not removed when vEMan ends
+			fix: Reopen VM Manager when action done
+			new: FULLY AUTOMATIC console detection and connection!! wow, cool ;o)
+			several cleanups and code enhancements
+
+v0.4.0 // 2012-02-13	fix: bug when aborting at logon screen
+			pre-add last used servername at logon screen
+
+v0.3.0 // 2012-02-10 	cleaned code, 
+			trying to handle problem when display name not the same then path name
+			give the baby a name ;o)
+			Choosing CC license (by-nd)
+
+v0.2.0 // 2012-02-09 	many changes (VNC detection, VNC port scan, console enhancements,....) 
+
+v0.1.0 // 2012-01-18 	initial version

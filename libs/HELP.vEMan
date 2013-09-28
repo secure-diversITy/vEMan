@@ -1,0 +1,30 @@
+# Displays usage and help
+F_HELP()
+{
+	MODULES=$(sed -n 's/.*\(VALIDFUNCS=\)"\(.*\)"/\2/p' $VLIB/runFUNCTION.vEMan)
+        cat << EOHELP
+        
+        vEMan - an unofficial [V]Mware® [E]SX(i) [Man]ager for Linux
+        Version: $VERSION
+
+        Usage information:
+                Besides a 'normal' run it is also possible to start vEMan by commandline.
+                That is normally not needed but can be very handy when it comes to open
+                a specific module only or troubleshooting an issue.
+
+        vEMan --help|-h|help    = Displays this help message
+        vEMan --version|-V      = Displays the version of vEMan
+	vEMan --init		= Will enforce initial startup (display license, restart the installer,..)
+	vEMAN --rate|-R		= Rate/Review vEMan - I want your feedback!
+
+        vEMan [<MODULE NAME>]   = Run vEMan with a specific module 
+				 (This is an untested new feature atm! You may run into other problems when 
+				 executing vEMan this way..)
+
+Available modules are:
+F_INSTALLER,F_LICENSE,${MODULES}
+
+EOHELP
+
+}
+

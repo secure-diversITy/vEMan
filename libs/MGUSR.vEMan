@@ -1,0 +1,85 @@
+# Add a new user to an ESX/i
+F_MGUSR()
+{
+        F_GETCFG
+
+	unset ROFORM NEWUSR
+
+	[ ! -z "$1" ] && NEWUSR="$1" && ROFORM=":RO"
+	
+	unset ADDANS ADDRET NEWPW1 NEWPW2 NEWROLE
+	while [ -z "$ADDANS" ];do
+
+		ADDRET=$($YAD --window-icon="$LOGO" --selectable-labels --center --form --title="$TITLE (Add a new user)" --width=500 --height=250 --text "IMPORTANT: ESX(i) has password restrictions which you need to met!\nNormally that means at least 8 chars.\n\nMore information: http://kb.vmware.com/kb/1012033\n\n" \
+                                --field="ESX(i) server":RO \
+                                --field="Username"$ROFORM \
+                                --field="Password (at least 8 chars)\n( \" chars will not work atm)":H \
+				--field="Repeat password":H \
+				--field="Role":CB \
+				--field="Shell access ( NOT available on ESX-i )":CHK \
+				"$SRV"\
+				"$NEWUSR"\
+				''\
+				''\
+				'admin!read-only!no-access'\
+				FALSE \
+                                --button="Next":23 \
+                                --button="Cancel":1 \
+                                --always-print-result )
+
+		ADDANS=$?
+		if [ "$ADDANS" -eq 252 ]||[ "$ADDANS" -eq 1 ];then
+        		echo DEBUG: Aborted by user in F_ADDUSR
+        		[ "$ADDANS" -eq 252 ] && F_EXIT
+			$PARENTF
+        	fi
+		
+		#DEBUG ONLY:
+		#echo "DEBUG: $ADDRET"
+
+		# bash substition is so damn cool
+                #PWUSR="${CURET##*|}"
+
+		# extract the relevant info from the answer
+		NEWUSR="$(echo "$ADDRET" |cut -d "|" -f 2)"
+		NEWPW1="$(echo "$ADDRET" |cut -d "|" -f 3)"
+		NEWPW2="$(echo "$ADDRET" |cut -d "|" -f 4)"
+		NEWROLE="$(echo "$ADDRET" |cut -d "|" -f 5)"
+		NEWSHELL="$(echo "$ADDRET" |cut -d "|" -f 6)"
+		
+		#compare both entered passwords and continue when they match only
+		if [ "$NEWPW1" != "$NEWPW2" ];then
+			F_MSG "Heya.. Password mismatch. Try again.."
+			unset ADDANS ADDRET NEWPW1 NEWPW2 NEWROLE
+		else
+			echo "DEBUG: Password ok (entered the same again twice)"
+		
+			# check password length and throw a warning if too short
+			PWCOUNT="${#NEWPW1}"
+			if [ "$PWCOUNT" -lt 8 ];then
+				echo "DEBUG: WARNING WARNING IT IS POSSIBLE THAT ESX WILL REJECT THIS PW"
+				echo "DEBUG: BECAUSE IT IS SHORTER THAN 8 CHARS (it is $PWCOUNT)!"
+				F_MSG "Warning: Your password is shorter than 8 chars.\nIt is possible that ESX will not accept this!"
+			else
+				echo "DEBUG: Password is equal or more than 8 characters. That's ok."
+			fi
+			# ENABLE THIS FOR DEBUGGING PURPOSES ONLY!!!
+			#echo "*********************************************************************************"
+			#echo "DEBUG: DEBUG DEBUG DEBUG DEBUG: <$NEWPW1>, <$NEWPW2>, <$NEWUSR>"
+			#echo "*********************************************************************************"
+			
+			# checking for shell access
+			if [ "$NEWSHELL" == "TRUE" ];then
+				echo "DEBUG: shell access wanted.."
+				ASHELL='--shell yes'
+			else
+				echo "DEBUG: no shell access wanted.."
+				unset ASHELL
+			fi
+		fi
+	done
+	
+#	$PARENTF
+}
+
+export -f F_MGUSR

@@ -1,0 +1,58 @@
+Known Issues
+--------------
+
+	If you encounter issues you can use the subversion repo which may contain fixes for your problem already.
+	The most fresh code can be checked out this way:
+
+	svn checkout svn://svn.code.sf.net/p/veman/source/trunk vEMan_trunk
+	or if the svn ports are blocked on your site:
+	svn checkout http://svn.code.sf.net/p/veman/source/trunk vEMan_trunk
+
+	Or simply browse the Repository and download single files by HTTP:
+	
+	http://sourceforge.net/p/veman/source/
+
+
+Requirements
+---------------
+
+	Because vEMan is based on VMware and other great tools you need to ensure that you have the following installed:
+
+	1) VMware Perl Toolkit (*) 
+	2) The VMware ovftool (**)
+
+	Besides the VMware requirements you need to have some standard Linux tools installed to get vEMan running:
+
+	netcat, yad (***), a vncviewer (like tightvncviewer or similar), openssl, bash, grep, sed, python (v2.5 or higher)
+
+
+Variables
+----------------
+
+	Please read the INSTALL file before starting vEMan.
+	You can find a variables file included in this package which you should modify according to your installation.
+	If the file is missing vEMan will create an example file for you.
+
+
+HELP
+---------------
+
+	If you struggle somewhere you can get community help at the vEMan project page on sourceforge.net!
+
+
+Footnotes
+---------------
+
+	(*) http://www.vmware.com/support/developer/vcli/)
+
+	(**) ATTENTION: v2.1.0 doesn't work! Use v2.0 or try any version higher than v2.1.0
+		OVFtool v2.0.1 (known to work very well) at VMware: 
+		https://my.vmware.com/group/vmware/get-download?downloadGroup=OVF-TOOL-2-0-1 (seems to be thrown away by VMware?!)
+		Alternative Google search:
+		https://www.google.de/search?q=download+vmware-ovftool-2.0.1*.sh
+		
+		Untested ovftool v3.0.1:
+		https://my.vmware.com/group/vmware/get-download?downloadGroup=OVF-TOOL-3-0-1
+
+ 	(***) yad is a fork of zenity (Homepage: http://code.google.com/p/yad/ - DEB packages available ;o) 
+

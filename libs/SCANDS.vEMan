@@ -1,0 +1,8 @@
+# This function will scan the ESX server for available datastores
+F_SCANDS(){
+	F_GETCFG
+	unset STORES
+	STORES="$(https_proxy="" $XHOSTDS --sessionfile $AUTHSESS --server "$SRV" --storagesum | sed '{:q;N;s/)\n/)|/g;t q}')"
+	[ -z "$STORES" ]&& echo "DEBUG: WARNING CANNOT DETECT STORAGES" && STORES="$LASTSTORE (unknown)"
+}
+export -f F_SCANDS

@@ -1,0 +1,36 @@
+# The review/rating popup
+F_REVIEWER()
+{
+        unset REVANS
+
+	RAT_SM="Giving feedback is easy and only 1 click away"
+	RAT_YES="$RAT_SM\n\nPlease click on the following link to rate vEMan:\n(_NO_ login or registration needed, only 1 click more)"
+	RAT_NO="$RAT_SM\n\nPlease click on the following link to rate vEMan:\n(NO login or registration needed, anonymous feedback possible)"
+
+	$YAD --title="$TITLE (Feedback)" --form \
+		--field=:LBL \
+		--field="I like it":BTN \
+		--field=:LBL \
+		--field="Not working as expected":BTN \
+		--field=:LBL \
+		--button="Skip or done" \
+		--button="Remind me later" \
+		"" \
+		"$YAD --image=\"$LOGO\" --image-on-top --window-icon=\"$LOGO\" --title=\"$TITLE (Feedback)\" --height=200 --width=500 --show-uri --text-info --filename=$VDOCS/rate-yes --text \"$RAT_YES\"" \
+		"" \
+		"$YAD --image=\"$LOGO\" --image-on-top --window-icon=\"$LOGO\" --title=\"$TITLE (Feedback)\" --height=200 --width=500 --show-uri --text-info --filename=$VDOCS/rate-no --text \"$RAT_NO\"" \
+
+                REVANS=$?
+
+                echo "DEBUG: return code was $REVANS"
+
+		if [ "$REVANS" -eq 252 ]||[ "$REVANS" -eq 1 ];then
+			 echo "DEBUG: Either nothing selected, canceled or set to remind me later"
+			[ -f "$REVFILE" ]&&rm -vf $REVFILE
+		else
+			echo "DEBUG: Skipped or finished rating process. This result will be saved."
+			> $REVFILE
+		fi
+}
+
+export -f F_REVIEWER

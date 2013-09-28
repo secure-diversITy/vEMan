@@ -1,0 +1,33 @@
+# Enabling VNC console
+F_ENABLEVNC()
+{
+        F_GETCFG
+        echo 0 > $PRGRSFILE
+        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Enable console)" --width=650 --progress --progress-text="Enabling console..." --auto-kill --auto-close &
+
+        echo 10 >> $PRGRSFILE
+        F_GETVMPATH
+        echo 30 >> $PRGRSFILE
+        #if [ "$RUNDISC" -ne 1 ]&&[ ! -z "$VNCPORT" ];then
+        echo "DEBUG: F_ENABLEVNC - current VNCPORT is $VNCPORT"
+#       if [ -z "$VNCPORT" ];then
+        echo "DEBUG: F_ENABLEVNC - Enforcing console activation without checking..."
+        F_GETFREEPORT
+#       fi
+        echo 60 >> $PRGRSFILE
+        https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.enabled true \
+          && echo 80 >> $PRGRSFILE \
+          && https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.port $VNCPORT
+        VNCERR="$?"
+        if [ "$VNCERR" -eq 0 ];then
+                echo 100 >> $PRGRSFILE
+                MSG="Console was enabled successfully."
+                $YAD --window-icon="$LOGO" --title="$TITLE (Console opened)" --on-top --center --text "$MSG" --button=OK
+        else            
+                echo 100 >> $PRGRSFILE
+                MSG="ERROR ($VNCERR) occured while enabling console..\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button=Close
+        fi
+}
+
+export -f F_ENABLEVNC

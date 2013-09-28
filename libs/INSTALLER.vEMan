@@ -1,0 +1,84 @@
+# When executed first time we try to install vEMan and the Desktop icon
+F_INSTALLER()
+{
+	echo "DEBUG: Start installer.."
+
+	$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --selectable-labels --title="$TITLE (Installer)" --width=700 --on-top --center --text "This installer will OVERWRITE _ALL_ existing files in\n the target directory you will choose in the next step.\n\n So be sure that you create a new folder when upgrading to a newer version and read the UPGRADE guide(s) in\n\n $VPATH/docs" --button "Cancel":1 --button "Choose target directory":22
+
+	[ $? -ne 22 ]&& echo "DEBUG: Aborted by user" && F_EXIT
+
+        unset INSTSELECT INSTANS ICODIR ICOANS
+
+        while [ -z "$INSTANS" ]||[ -z "$INSTSELECT" ];do
+                INSTSELECT=$($YAD --window-icon="$LOGO" --title="$TITLE (Choose your target directory / create it)" --width=800 --height=800 --file --directory --always-print-result)
+                INSTANS=$?
+
+                echo "DEBUG: selected dir was: $INSTSELECT"
+
+                [ "$INSTANS" -eq 252 ]&& echo "DEBUG: aborted by user" && F_EXIT
+
+        done
+
+        echo "DEBUG: Answer was $INSTANS, $INSTSELECT"
+
+	if [ ! -d "$INSTSELECT" ];then
+		echo "DEBUG: Target directory >$INSTSELECT< does not exist.."
+                MSG=" Target directory does not exist!\n Please create the target directory and start vEMan again."
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Close:0
+		F_EXIT
+	else
+		> "$FRESHINST"
+		echo "DEBUG: OK, target directory >$INSTSELECT< exists"
+
+		$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Ready to go..)" --width=700 --on-top --center --text "This installer will OVERWRITE _ALL_ existing files in\n the target directory (if there are files in there): \n\n $INSTSELECT \n\n No way back after this.." --button "Cancel":1 --button "Well if there are files - yeah overwrite them!":22
+
+        	[ $? -ne 22 ]&& echo "DEBUG: Aborted by user" && F_EXIT	
+	
+		# create desktop icon
+		cat > vEMan.desktop <<EOFICO
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=vEMan
+Comment=An unofficial VMware ESX/ESXi Manager for Linux
+Type=Application
+Exec=$INSTSELECT/vEMan
+Icon=$INSTSELECT/pics/vEMan_logo_beta.png
+EOFICO
+
+		# copy vEMan to the installation dir
+		cp -avf "${VPATH}"/* "$INSTSELECT"
+		if [ $? -eq 0 ];then
+			$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Copying files succeeded)" --width=700 --on-top --center --text "vEMan is installed in\n\n\n$INSTSELECT \n\nNext step is to choose a place for the start icon of vEMan (e.g. your Desktop)" --button "Install vEMan icon":1
+				
+			if [ $? -eq 1 ];then
+				while [ -z "$ICOANS" ]||[ -z "$ICODIR" ];do
+					ICODIR=$($YAD --window-icon="$LOGO" --title="$TITLE (Target directory for the vEMan start icon)" --on-top --center \
+						--width=800 --height=800 --file --directory --always-print-result)
+					ICOANS=$?
+				done
+				echo "DEBUG: selected dir was: $ICODIR"
+				[ "$ICOANS" -eq 252 ]&& echo "DEBUG: aborted by user" && F_EXIT	
+				cp -vfa "${VPATH}"/vEMan.desktop "$ICODIR"/ && chmod +x "$ICODIR"/vEMan.desktop
+				if [ $? -eq 0 ];then
+					 $YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Installation ended)" --width=700 --on-top --center --text "Finished vEMan installation with success\nYou can start vEMan by double clicking the Destop icon in the folder:\n\n\n  $ICODIR\n\n I hope you will enjoy vEMan and who knows ... if you \n like colors and live in Germany you may find the small egg inside.." --button "Exit installer":1
+				else
+					echo "DEBUG: ERROR while copying the vEMan dirs"
+					MSG="ERROR while copying the vEMan dirs (F_INSTALLER)"
+					$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Close:0
+				fi
+				F_EXIT
+			else
+				echo "DEBUG: aborted by user."
+				F_EXIT
+			fi
+		else
+			echo "DEBUG: aborted by user."
+			F_EXIT
+		fi
+
+	fi
+
+F_EXIT
+
+}

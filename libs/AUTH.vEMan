@@ -1,0 +1,12 @@
+# auth
+F_AUTH()
+{
+        F_GETCFG
+        if [ -z "$FIRSTRUN" ];then
+                [ "$DEBUG" -eq 0 ] && rm -vf "$AUTHSESS"
+                FIRSTRUN=1
+        fi
+        F_LOGIN
+}
+
+export -f F_AUTH

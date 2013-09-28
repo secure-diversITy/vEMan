@@ -1,0 +1,67 @@
+# this will handle all VM specific operations
+F_VMMGR()
+{
+        echo "DEBUG: open VM MAnager.."
+        F_GETCFG
+        if [ -z "$TARGETVM" ];then
+                echo " DEBUG: ERROR: No VM host selected?"
+                MSG="ERROR: You haven't selected a target VM. Please try again\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                F_ESXMGR
+        else
+
+                echo "DEBUG: getting VM info" 
+                unset INFANS RETINF
+
+                while [ -z "$INFANS" ];do
+                        [ "$RETINF" == "222" ]||[ "$RETINF" == "252" ]&& break
+
+                        # convert to an unproblematic filename 
+                        PTARGETVM=$(echo $TARGETVM | sed 's/[\ .öüäß\(\)\[\]&%]/_/g')
+                        PTARGXML=${VMCDIR}/${TARGETVM}.xml
+
+                        # fetch VM info and parse it accordingly
+                        PARSEVM=$(https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --vmname "$TARGETVM" --out $PTARGXML)
+                        #FORMFIELDS=$($VLIB/PARSEXML.py -x $PTARGXML -m fields)
+                        #FIELDVALS=$($VLIB/PARSEXML.py -x $PTARGXML -m fvalues)
+                        XMLOUT=$($PYPARS --readxml -x $PTARGXML -m yadlist)
+
+                        # unbelievable. I tried really EVERYTHING to make YAD using the parsed data from an XML file...
+                        # YAD is not able to handle smthg like:
+                        # --field=ABC "value A"
+                        # --field=DEF "value B"
+                        # and so on when used in a variable. The main problem are spaces in a value. Even this is working 
+                        # fine when you do that manually - no problem but when you have the above output in a variable 
+                        # (doesn't matter if that variable is a one liner, multi liner or even an array!!!) you will have the 
+                        # value splitted to a new field. Soooo ugly shit man. I workaround now and in vEMan v2.x with pySphere + pyGTK/QT
+                        # everything will be better ;o)
+                        # ah and that change here (using a python xml parser) at least gives a little speed up ;o)
+
+                        INFANS=$(echo -e "$XMLOUT" |$YAD --window-icon="$LOGO" --title="$TITLE (VM Manager)" --center --height 600 --width 600 --list --column "Type" --column "Output" --always-print-result\
+                                  --button="Console":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_CONSOLEMGR'" \
+                                  --button="Power":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_POWER'"\
+                                  --button="Snapshots":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_SNAPMGR'"\
+                                  --button="Edit":"bash -c 'TARGETVM=$TARGETVM PTARGXML=$PTARGXML $VLIBFNC F_VMEDITOR'"\
+                                  --button="Delete this VM":88 \
+                                  --button="Refresh":10 \
+                                  --button="Back":222)
+
+                        RETINF=$?
+                        if [ "$RETINF" == 252 ]||[ "$RETINF" == "222" ];then
+                                echo "DEBUG: Returning to vEMan main screen ($RETINF).."       
+                                INFANS=$RETINF
+                        else
+				if [ "$RETINF" -eq 88 ];then
+					echo "DEBUG: starting VM destroy manager"
+					TARGETVM="$TARGETVM" F_DELETEVM
+				else
+					echo "DEBUG: Returning to VM info screen ($?)"
+				fi
+                        fi
+                done
+        
+                F_ESXMGR
+        fi
+}
+
+export -f F_VMMGR

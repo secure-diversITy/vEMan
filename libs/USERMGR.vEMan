@@ -1,0 +1,54 @@
+# this opens the ESX user manager
+F_USERMGR()
+{
+        F_GETCFG
+	F_PARENTF F_USERMGR
+	unset UANS URET
+	while [ -z "$UANS" ];do
+
+		URET=$(https_proxy="" $XUSRMGR --sessionfile $AUTHSESS --server "$SRV" -e user --operation list \
+			| egrep -i "Principal|name|UID" | cut -d ":" -f 2 | sed 's/^\ *//' | $YAD --window-icon="$LOGO" --center --title="$TITLE (User Manager)" --width=600 --height=550 --list --text "User management. Doublelick an entry will change password." \
+                          --column="Login" \
+                          --column="Description" \
+                          --column="User ID" \
+			  --button="Add new user":2 \
+                          --button="Change password":1 \
+                          --button="Return to vEMan":3 \
+                          --always-print-result)
+		UANS=$?
+		if [ "$UANS" -eq 252 ];then
+        		echo "DEBUG: Aborted by user in F_USERMGR"
+        		F_EXIT
+		elif [ "$UANS" -eq 1 ]&&[ -z "$URET" ];then
+			echo "DEBUG: No user selected. Cannot proceed."
+			F_MSG "No user selected!\n\nSelect a user login and try again."
+			unset UANS
+        	fi
+	done
+	case "$UANS" in
+			0|1)
+			echo "DEBUG: Change password..."
+			# bash substition is so damn cool
+			URETMOD=${URET%%|*}
+			if [ -z "$URETMOD" ];then
+				echo "DEBUG: ERROR while converting user name..."
+				F_ERR "ERROR while converting user name..."
+			fi
+			F_CHGUSR "$URETMOD"
+			;;
+			2)
+			echo "DEBUG: Adding new user..."
+			F_ADDUSR
+			;;
+			3)
+			echo "DEBUG: Returning to vEMan..."
+			F_ESXMGR
+			;;
+			*)
+                	echo "F_USERMGR ERROR: Unspecified action ($UANS) defined"
+                	F_ERR "Unspecified action ($UANS) defined (F_USERMGR)"
+			;;
+	esac
+}
+
+export -f F_USERMGR

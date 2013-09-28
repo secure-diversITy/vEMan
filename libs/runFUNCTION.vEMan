@@ -1,0 +1,146 @@
+#!/bin/bash
+##################################################################################################################
+#
+# 
+# Copyright by Thomas Fischer <thomas@nethna.de>
+# Original source available at: http://vEMan.nethna.de
+#
+# vEMan by Thomas Fischer is licensed under a Creative Commons Attribution-NoDerivs 3.0 Unported License.
+# ------------------------------------------------------------------ #
+# You are free:
+#    to Share — to copy, distribute and transmit the work
+#    to make commercial use of the work 
+# Under the following conditions:
+#    Attribution — You must attribute the work in the manner specified by the author or licensor 
+#		   (but not in any way that suggests that they endorse you or your use of the work).
+#    No Derivative Works — You may not alter, transform, or build upon this work. 
+# With the understanding that:
+#    Waiver — Any of the above conditions can be waived if you get permission from the copyright holder.
+#    Public Domain — Where the work or any of its elements is in the public domain under applicable law, 
+#		     that status is in no way affected by the license.
+#    Other Rights — In no way are any of the following rights affected by the license:
+#        Your fair dealing or fair use rights, or other applicable copyright exceptions and limitations;
+#        The author's moral rights;
+#        Rights other persons may have either in the work itself or in how the work is used, such as 
+#	publicity or privacy rights.
+#    Notice — For any reuse or distribution, you must make clear to others the license terms of this work. 
+#	      The best way to do this is with a link to this web page.
+# ------------------------------------------------------------------ #
+# Read the full license at: http://creativecommons.org/licenses/by-nd/3.0/
+#
+# First version: April 2012
+#
+#
+#
+#################################################################################################################
+#
+# NORMAL USAGE:	start vEMan instead of this one
+# DEBUGGING:	start this with the function name you want to test as the first argument
+#
+##################################################################################################################
+
+# get the current path and so on:
+#P=$(readlink -f $0)
+#B=$(basename $0)
+#VPATH="${P%/$B}"
+
+
+VETC="$VPATH/etc"
+USERCONF="$VETC/uservars_vEMan.cfg"
+SYSCONF="$VETC/sysvars_vEMan.cfg"
+
+export PERL_LWP_SSL_VERIFY_HOSTNAME
+
+# enable/disable debug mode (0/1)
+# this will produce a LOT of output and WILL contain sensitive information like username, password, .. 
+DEBUG=0
+
+
+
+if [ -z "$1" ];then
+	echo "DEBUG: ERROR. Missing arg for $0"
+	F_EXIT
+else
+	FUNC="$1"
+fi
+
+# comma separated list of valid functions
+VALIDFUNCS="F_CHKPWR,F_CHKESXVER,F_MGUSR,F_ADDUSR,F_MSG,F_CHGUSR,F_USERMGR,F_REVIEWER,F_NOTREADY,F_SCANNET,F_SCANDS,F_HOSTMGR,F_SAVEOVFSET,F_VERSION,F_HELP,F_SNAPMGR,F_VMEDITOR,F_VMMGR,F_POWERACT,F_MAINLOOP,F_ACTIONS,F_AUTH,F_CHKCFG,F_CONSOLEMGR,F_CRTCOOKIE,F_CRTVMLIST,F_DEPLOVF,F_DEPLVMX,F_DETECTVNC,F_DISABLEVNC,F_ENABLEVNC,F_ERR,F_ESXMGR,F_GETCFG,F_GETFREEPORT,F_GETVMMANUAL,F_GETVMPATH,F_LOGIN,F_MKCFG,F_MKOVFCFG,F_OPENCONSOLE,F_POWER,F_SELECTVM,F_SPACECONV,F_SUSPEND,F_PARENTF,F_DEC,F_DELETEVM"
+# update the above list when adding a new function!
+# not the best way but an example is:
+# egrep "F_.*()" libs/runFUNCTION.vEMan|grep -v "bash"|grep -v VALIDFUNCS |egrep -v "F_ERR \"" |grep -v echo |sed s/[[:space:]]//g |grep -v "#" |sort |sed 's/(//g;s/)//g' |uniq |tr "\n" ","
+
+
+# check for valid function
+echo "$VALIDFUNCS" |grep "$FUNC" >/dev/null
+if [ $? -ne 0 ];then
+	echo "DEBUG: Given argument ($FUNC) is unknown!"
+	F_EXIT
+else
+	echo "DEBUG: Argument given is valid ($@)"
+	ARG1=$2
+	ARG2=$3
+fi
+
+##########################################################################################################
+##########################################################################################################
+
+# include user vars
+. "$USERCONF"
+if [ $? -eq 0 ];then
+	echo "DEBUG: User variable file $USERCONF included successfully."
+else
+	echo "DEBUG: User variable file $USERCONF cannot be included!"
+	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "User variable file $USERCONF cannot be included!\nTry to run vEMan at commandline to see debug output." --image dialog-error --button ABORT
+	F_EXIT 	
+fi
+
+# include system vars
+. "$SYSCONF"
+if [ $? -eq 0 ];then
+        echo "DEBUG: System variable file $SYSCONF included successfully."
+else
+        echo "DEBUG: System variable file $SYSCONF cannot be included!"
+        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "System variable file $SYSCONF cannot be included!\nTry to run vEMan at commandline to see debug output." --image dialog-error --button ABORT
+        F_EXIT
+fi
+
+# From now on everything will be logged to FLOG
+#exec 3>&1
+#exec 4>&2
+exec > $FLOG 2>&1
+
+echo "****************************************"
+echo "This is vEMan $VERSION"
+echo "****************************************"
+
+# include all available functions
+SAVEIFS=$IFS && IFS=$','
+for vLibs in $(echo "$VALIDFUNCS");do
+	. ${VLIB}/${vLibs#F_}.vEMan && echo "DEBUG: included >$vLibs< successfully" \
+		&& export -f ${vLibs} \
+		|| echo "DEBUG: Problem while including >$vLibs< !"
+done
+IFS="$SAVEIFS"
+
+##################################################################################################################
+##################################################################################################################
+
+
+# precheck required files and settings
+SAVEIFS=$IFS && IFS=$','
+
+for REQ in $(echo "$ALLBINS");do
+	if [ -x "$REQ" ];then
+		echo "DEBUG: Requirement $REQ met."
+	else
+		echo "DEBUG: Error requirement $REQ is not available or executable!"
+		IFS="$SAVEIFS"
+		F_ERR "ERROR: Requirement $REQ is not available or executable!\nPlease check README for requirements."
+	fi
+done
+IFS="$SAVEIFS"
+
+# Finally run the given function:
+$FUNC
+

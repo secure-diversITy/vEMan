@@ -1,0 +1,93 @@
+# open console
+# FKA: F_CONSOLE
+F_OPENCONSOLE()
+{
+	F_GETCFG
+        # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
+        echo 100 >> $PRGRSFILE
+        echo 0 > $PRGRSFILE
+
+	F_CHKESXVER
+
+	if [ -z "$ESXCHK" ];then
+		echo "DEBUG: Cannot detect ESX version."
+	else
+		if [ "$ESXCHK" -lt 510 ];then
+			echo "DEBUG: Detected ESX version smaller than 5.1"
+		else
+			echo "DEBUG: Warning: Detected ESX 5.1 or higher"
+			if [ ! -f "$FWWARN" ];then
+				F_MSG "WARNING: \nDetected an ESX 5.1 or higher!\n\nYou have to add Firewall rules in ESX.\nThe following guide can be found here:\n\n  $ESXFWREAD\n\nThis warning will be displayed only once (for each ESX)!"
+				$YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (ESX Firewall)" --width=1000 --height=800 \
+                                	--center --wrap --text-info \
+                                	--button="Done":33 \
+                                	--always-print-result < $ESXFWREAD
+				# create info file
+				[ $? -eq 33 ] && touch "$FWWARN"
+			else
+				echo "DEBUG: Skipped firewall hint because already displayed before."
+			fi
+		fi
+	fi
+
+        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Open console)" --width=650 --progress --progress-text="Opening console..." --auto-kill --auto-close &
+        YANS=0
+
+        if [ -z "$TARGETVM" ];then
+                if [ -z "$2" ];then
+                        echo "ERROR: No VM host selected?"
+                        F_EXIT
+                else
+                        TARGETVM="$2"
+                fi
+        fi
+
+        F_GETVMPATH 
+        echo 80 >> $PRGRSFILE
+# $YAD --center --title="$TITLE (Open console)" --width=650 --progress --pulsate --progress-text="Connecting..." --auto-kill --auto-close
+#       F_GETCFG
+
+        echo "DEBUG: open console for $TARGETVM"
+
+#       SCANNEDPORT=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV $FULLVMPATH getguestinfo RemoteDisplay.vnc.port)
+
+        F_DETECTVNC "$TARGETVM"
+        echo 90 >> $PRGRSFILE   
+
+#### MANUAL connection:
+#       while  [ -z "$VNCPORT" ]&&[ $YANS != 1 ];do
+#               VNCCFG=$($YAD --title="vSphere for Linux (Console)" --width=100 --form --field="VNC port at ESXi server" --field="VNC password (if needed)":H)
+#               YANS=$?
+#               VNCPORT=$(echo "$VNCCFG" | cut -d "|" -f 1)
+#               VNCDPASS=$(echo "$VNCCFG" | cut -d "|" -f 2)
+#       done
+#####
+#       if [ -z "$DPORT" ];then
+#               echo "DEBUG: Error occured while detecting the VNC port. Is VNC disabled?"
+#               F_ERR "Error occured while detecting the VNC port. Is VNC disabled?"
+#       fi
+
+        echo "DEBUG: port is $VNCPORT, server is $SRV"
+
+
+        if [ -z "$VNCPASS" ];then
+                echo "DEBUG: Opening console without pw."
+                echo 100 >> $PRGRSFILE
+                $XVNC $SRV::$VNCPORT
+                OPERR="$?"
+        else
+                echo 100 >> $PRGRSFILE
+                $XVNC $SRV::$VNCPORT -autopass
+                OPERR="$?"
+        fi
+
+        if [ "$OPERR" -ne 0 ];then
+#                MSG="ERROR ($OPERR) occured while connecting to console..\n"
+#                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button=OK
+                echo " DEBUG: Console ended with <$OPERR>. This can be ok but since VNC export not a valid return code we will raise a warning only..\n"
+		echo "DEBUG: If you cannot open a console it is possible that the ESX firewall is blocking the VNC ports: 5900-5999."
+		echo "DEBUG: Check $ESXFWREAD for details on how to fix that"
+        fi
+} 
+
+export -f F_OPENCONSOLE

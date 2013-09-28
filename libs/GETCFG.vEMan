@@ -1,0 +1,14 @@
+# parse config file to fetch user credentials and so on
+F_GETCFG()
+{
+        echo "DEBUG: checking config..."
+        F_CHKCFG
+        if [ -z "$SRV" ];then
+                echo "DEBUG: Problem parsing the settings file (corrupted?)"
+                F_LOGIN
+        else
+                echo "DEBUG: config ok."
+        fi
+		
+}
+export -f F_GETCFG
