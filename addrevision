@@ -1,0 +1,3 @@
+#! /bin/bash
+lastci=$(git log --pretty=format:"%h" -1)
+sed "s:REVISIONTAG:git-${lastci}:"
