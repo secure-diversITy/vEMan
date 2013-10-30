@@ -10,8 +10,11 @@ vEMan History
 -----------------------------------------
 
 MASTER // MASTER
+		new: added a skip-button for creating vEMan desktop icon when installing
+		new(!): introducing the first official vEMan Compendium!!!! Check it out on the project page.
+		fix: license was not displayed correctly on smaller screens.. 
 		new: changed development CVS tool to GIT instead of SVN. GIT is so damn great.. 
-		new: info header in all important documents
+		new: identical info header in all important documents
 		new(!): added a TROUBLEshooting file with important hints if you run into problems
 				AND: cleaned up README, UPGRADE, INSTALL accordingly
 		new(!): The very first RC of vEMan v1.0 is near! ;o)
@@ -26,7 +29,7 @@ MASTER // MASTER
 			 from now on python at least v2.5 is a requirement for running all functions of vEMan
 			 This XML parser gives a little speed improvement when displaying the VMs information.
 		fix: some vars cleaning in sysvars_vEMan.cfgs
-		new(!): WHEN UPGRADING - READ THE UPGRADE GUIDE! The uservars_vEMan.cfg have changed
+		new(!): WHEN UPGRADING - READ THE UPGRADE GUIDE! The uservars_vEMan.cfg have changed!!!!!
 		new: fixed fileaccess.pl because it returns absolutely no errorcode as return value. "Great" work VMware..
 		fix: be more tolerant when deploying OVF/OVA
 		new: added cpu core detection of ESX in hostinfo.pl

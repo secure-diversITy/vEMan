@@ -5,31 +5,28 @@ F_LICENSE(){
         unset LSELECT LANS
 
         while [ -z "$LANS" ];do
-                LSELECT=$($YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (License)" \
+                LSELECT=$($YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (License)" --width=750 --height=300 \
                                 --center --text \
-"\n\n<u>THIS IS A <b>HUMAN READABLE LICENSE SUMMARY</b>!\n\nTO READ THE FULL LICENSE CLICK ON THE BUTTON AT THE BOTTOM</u>\n\n\n
+"\n<u>THIS IS A <b>HUMAN READABLE LICENSE SUMMARY</b>!\n\nTO READ THE FULL LICENSE CLICK ON THE BUTTON AT THE BOTTOM</u>\n
 <b>You are free:</b> \n
     to <i>Share</i> - to copy, distribute and transmit the work \n
     to make <i>commercial use</i> of the work \n
-\n
 <b>Under the following conditions:</b>\n
     <i>Attribution</i> - You must attribute the work in the manner specified by the author or licensor\n
-                  \(but not in any way that suggests that they endorse you or your use of the work\).\n
+    \(but not in any way that suggests that they endorse you or your use of the work\).\n
     <i>No Derivative</i> Works — You may not alter, transform, or build upon this work.\n
-\n
 <b>With the understanding that:</b>\n
     <i>Waiver</i> - Any of the above conditions can be waived if you get permission from the copyright holder.\n
     <i>Public Domain</i> - Where the work or any of its elements is in the public domain under applicable law,\n
-                    that status is in no way affected by the license.\n
-\n
+    that status is in no way affected by the license.\n
     <i>Other Rights</i> - In no way are any of the following rights affected by the license:\n
         Your fair dealing or fair use rights, or other applicable copyright exceptions and limitations;\n
         The author's moral rights;\n
         Rights other persons may have either in the work itself or in how the work is used, such as\n
        publicity or privacy rights.\n
     <i>Notice</i> - For any reuse or distribution, you must <b>make clear to others the license terms</b> of this work.\n
-                    The best way to do this is with a link to the projects homepage.\n" \
-				--button="Read full license":30 \
+    The best way to do this is with a link to the projects homepage." \
+                                --button="Read full license":30 \
                                 --button="Accept":33 \
                                 --button="Decline":34 \
                                 --always-print-result)

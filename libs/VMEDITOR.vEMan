@@ -93,9 +93,19 @@ F_VMEDITOR()
   # duplicate vmx
   cp -f $LOCDLVMX $LOCNEWVMX
 
-  # array space separated VMX values we want to get and edit
+  # array space separated VMX values we want to get and edit.
+  # new vars needs to be also parsed in "present changeable data" section!
+  RAMSIZE="memsize"
+  DNAME="displayName"
+  ETH0NAME="ethernet0.networkName"
+  RVNCPORT="RemoteDisplay.vnc.port"
+  RVNCSTATE="RemoteDisplay.vnc.enabled"
+  VCPUS="numvcpus"
+
+  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $RVNCPORT $RVNCSTATE $VCPUS)
+  
   # order is important! new vars needs to be also parsed in "present changeable data" section!
-  ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus RemoteDisplay.vnc.enabled)
+  #ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus RemoteDisplay.vnc.enabled)
 
   # get relevant data
   unset VMXVALG VMXVAL
@@ -104,16 +114,23 @@ F_VMEDITOR()
     # parse XML and find matches
     VMXVALG=$(grep $VMXVAL $LOCNEWVMX)
     if [ ! -z "$VMXVALG" ];then
-      if [ ! -z "$VMXARR" ];then
-        VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
-        VMXARR=(${VMXARR[@]},$VMXVALG)
-      else
-        VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
-        VMXARR=($VMXVALG)
-      fi
+        echo "DEBUG: VMX arg $VMXVALG detected."
+    else
+        echo "DEBUG: VMX arg $VMXVALG NOT present."
+        VMXVALG="$VMXVAL = \"UNKNOWN\""
+    fi
+    if [ ! -z "$VMXARR" ];then
+      #VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+      VMXARR=(${VMXARR[@]},$VMXVALG)
+      echo "DEBUG: $VMXVALG added to array. Now: ${VMXARR[@]}"
+    else
+      #VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+      VMXARR=($VMXVALG)
+      echo "DEBUG: $VMXVALG added to a NEW array. Now: ${VMXARR[@]}"
     fi
   done
   echo 75 >> $PRGRSFILE
+  unset RETEDIT
   # present changeable data
   while [ -z "$EDITANS" ];do
     # break out if aborted
@@ -127,8 +144,10 @@ F_VMEDITOR()
       echo "DEBUG: numvcpus are set. ok."
     else
       echo "DEBUG: numvcpus are not set. will do so."
+      echo "DEBUG: before: ${VMXARR[@]}"
       XMLCPUNO=$($PYPARS --readxml -x $PTARGXML -m xmltag -t noCPU)
       VMXARR=(${VMXARR[@]},$XMLCPUNO)
+      echo "DEBUG: after: ${VMXARR[@]}"
     fi
     echo "${VMXARR[@]}" |tr -d '\"' | sed 's/,/\n/g' >> $YADREST
     sed -i 's/^[[:space:]]*//g' $YADREST

@@ -1,4 +1,4 @@
-# Add a new user to an ESX/i
+# Manage users on an ESX/i
 F_MGUSR()
 {
         F_GETCFG

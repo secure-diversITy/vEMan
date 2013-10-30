@@ -46,12 +46,14 @@ Exec=$INSTSELECT/vEMan
 Icon=$INSTSELECT/pics/vEMan_logo_beta.png
 EOFICO
 
+        unset YADEX CPRET
 		# copy vEMan to the installation dir
 		cp -avf "${VPATH}"/* "$INSTSELECT"
-		if [ $? -eq 0 ];then
-			$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Copying files succeeded)" --width=700 --on-top --center --text "vEMan is installed in\n\n\n$INSTSELECT \n\nNext step is to choose a place for the start icon of vEMan (e.g. your Desktop)" --button "Install vEMan icon":1
-				
-			if [ $? -eq 1 ];then
+        CPRET=$?
+		if [ "$CPRET" -eq 0 ];then
+			$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Copying files succeeded)" --width=700 --on-top --center --text "vEMan is installed in\n\n\n$INSTSELECT \n\nNext step is to choose a place for the start icon of vEMan (e.g. your Desktop)" --button "Install vEMan icon":1 --button "Skip Desktop icon":22
+			YADEX=$?
+			if [ "$YADEX" -eq 1 ];then
 				while [ -z "$ICOANS" ]||[ -z "$ICODIR" ];do
 					ICODIR=$($YAD --window-icon="$LOGO" --title="$TITLE (Target directory for the vEMan start icon)" --on-top --center \
 						--width=800 --height=800 --file --directory --always-print-result)
@@ -60,20 +62,28 @@ EOFICO
 				echo "DEBUG: selected dir was: $ICODIR"
 				[ "$ICOANS" -eq 252 ]&& echo "DEBUG: aborted by user" && F_EXIT	
 				cp -vfa "${VPATH}"/vEMan.desktop "$ICODIR"/ && chmod +x "$ICODIR"/vEMan.desktop
-				if [ $? -eq 0 ];then
-					 $YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Installation ended)" --width=700 --on-top --center --text "Finished vEMan installation with success\nYou can start vEMan by double clicking the Destop icon in the folder:\n\n\n  $ICODIR\n\n I hope you will enjoy vEMan and who knows ... if you \n like colors and live in Germany you may find the small egg inside.." --button "Exit installer":1
-				else
-					echo "DEBUG: ERROR while copying the vEMan dirs"
-					MSG="ERROR while copying the vEMan dirs (F_INSTALLER)"
-					$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Close:0
-				fi
-				F_EXIT
+				IRET=$?
 			else
-				echo "DEBUG: aborted by user."
-				F_EXIT
+                if [ "$YADEX" -eq 22 ];then
+                    echo "DEBUG: skipping desktop icon creation.."
+                    IRET="$CPRET"
+                else
+                	echo "DEBUG: aborted by user."
+                	F_EXIT
+                fi
 			fi
+            if [ "$IRET" -eq 0 ];then
+                $YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --title="$TITLE (Installation ended)" \
+                   --width=700 --height=200 --on-top --center --button "Exit installer":1 \
+                   --text \
+                   "Finished vEMan installation with success\nYou can start vEMan by double clicking the Destop icon in the folder:\n\n\n  $ICODIR\n  $INSTSELECT\n\n I hope you will enjoy vEMan and who knows ... if you \n like green and you know it germans translation you may find the small egg inside.."
+            else
+               echo "DEBUG: ERROR while copying the vEMan dirs"
+               MSG="ERROR while copying the vEMan dirs (F_INSTALLER)"
+               $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Close:0
+            fi    
 		else
-			echo "DEBUG: aborted by user."
+            F_MSG "ERROR occured while copying vEMan files to $INSTSELECT.\nCheck that you have enough free space and the proper permissions\nto install vEMan in that directory."
 			F_EXIT
 		fi
 
