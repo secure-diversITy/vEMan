@@ -14,6 +14,8 @@ Good to know:
     For the most problems I recommend to start vEMan from the commandline which
     may help in many cases to find out the root problem of your issue.
 
+   There is a vEMan compendium available in ./docs/ - check it out!
+
 Get Support:
 
     Go to the vEMan support forum for -community(!) based- help:
@@ -50,13 +52,27 @@ A) vEMan doesn't start!
     
     and take a briefly look on the output vEMan gives.
 
-C) Problem XYZ occurs!
+B) Problem XYZ occurs!
 
     Start vEMan from the commandline, check output and
     
     check the log file which is created within your home dir:
 
     $> cat ~/.vEMan/vEMan.log
+
+C) vEMan works fine but I cannot open the Console of a VM:
+
+   If you have an ESX v5 or higher the ESX firewall may be enabled and therefore blocks
+   connections.
+   Check the guide in docs/README_ESX5.1
+   
+   If you have a firewall between you and the target ESX you need to ensure that the port
+   range 5900-5999 is open from you to your ESX. Well you may need all of those ports that
+   depends on the count of your VMs you want to manage on the target ESX. The port can be
+   changed within the VM Editor of vEMan. Check the vEMan compendium for details. 
+
+   You can also Re-enforce the console activation by enable the console in the VM Editor again
+   More details in the vEMan compendium.
 
 D) D1) Where is my vEMan start icon? 
    D2) I want to re-install vEMan!
