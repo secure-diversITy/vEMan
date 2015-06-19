@@ -33,7 +33,7 @@ Recommended versions
     
     Currently recommended and well tested environment is:
     
-        - VMware SDK for Perl:  v5.1 (v5.5 is NOT supported atm!)
+        - VMware SDK for Perl:  v5.1 (v5.5 is NOT supported, v6.0 seems to work but not longterm tested yet)
         - ovftool:              v2.0.1 (or 3.x.x when you do NOT want to deploy)
         - yad:                  v0.23.1
         - python:               v2.7.3

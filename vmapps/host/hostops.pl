@@ -114,7 +114,7 @@ if (Opts::get_option('operation') eq 'add_standalone') {
 # bug 402656
    my $sc = Vim::get_service_content();
    $apiVersion = $sc->about->apiVersion;
-   if($apiVersion eq '4.0') {
+   if($apiVersion =~ /^4./ || $apiVersion =~ /^5./ || $apiVersion =~ /^6./) {
       my $dc_view = Vim::find_entity_view(view_type => 'Datacenter');
       my $target_host = Opts::get_option('target_host');
       my $target_username = Opts::get_option('target_username');
@@ -153,6 +153,45 @@ if (Opts::get_option('operation') eq 'add_standalone') {
    add_standalone_host($folder_views);
 }
 elsif (Opts::get_option('operation') eq 'addhost') {
+my $sc = Vim::get_service_content();
+   $apiVersion = $sc->about->apiVersion;
+   
+   if($apiVersion =~ /^4./ || $apiVersion =~ /^5./ || $apiVersion =~ /^6./) {
+   
+      my $dc_view = Vim::find_entity_view(view_type => 'Datacenter');
+      my $target_host = Opts::get_option('target_host');
+      my $target_username = Opts::get_option('target_username');
+      my $target_password = Opts::get_option('target_password');
+      my $port = Opts::get_option('port');
+      eval {
+         my $response = $dc_view->QueryConnectionInfo(hostname => $target_host,
+                                                      username => $target_username,
+                                                      password => $target_password,
+                                                      port => $port);
+      };
+      if ($@) {
+         if (ref($@) eq 'SoapFault') {
+            if (ref($@->detail) eq 'SSLVerifyFault') {
+               Util::trace(0, "SSL Verify Fault : VC server could not verify the authenticity of the host's SSL certificate\\n\n");
+               print "Did you trust certificate : " . $@->detail->thumbprint . " (y/n) : ";
+               my $ans = <STDIN>;
+               chomp $ans;
+               if($ans eq "y") {
+                  $thumbprint = $@->detail->thumbprint;
+               }
+               else {
+                 exit(0);
+               }
+            }
+            else {
+               Util::trace(0, "Error: "  . $@ . " ");
+            }
+         }
+         else {
+            Util::trace(0, "Error: "  . $@ . " ");
+         }
+      }
+   }
     add_host();
 }
 else {
@@ -269,6 +308,7 @@ sub add_host {
                                                        userName => $target_username,
                                                        password => $target_password,
                                                        port => $port,
+													   sslThumbprint => $thumbprint, 
                                                       ));
        $cluster->AddHost(spec => $host_connect_spec, asConnected => 1);
        my $host_views = HostUtils::get_hosts ('HostSystem',undef,undef, %filterHash);
@@ -485,7 +525,7 @@ sub add_standalone_host {
    eval {
       # bug 402656
       my $host_connect_spec;
-      if($apiVersion eq '4.0') {
+      if($apiVersion =~ /^4./ || $apiVersion =~ /^5./ || $apiVersion =~ /^6./) {
          $host_connect_spec = (HostConnectSpec->new(force => ($force || 0),
                                                     hostName => $target_host,
                                                     userName => $target_username,

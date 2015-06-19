@@ -12,6 +12,10 @@ case "$ACTION" in
                 echo Deploying VMX
                 F_DEPLVMX
         ;;
+        DeployChooser)
+                echo Deploy chooser
+                F_DEPLCHOOSER
+        ;;
         VMlist)
 		CFILE=( "$TMPonlinevms" "$TMPofflinevms" "$TMPsleepingvms" )
 
