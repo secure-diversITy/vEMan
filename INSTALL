@@ -12,15 +12,35 @@ Within the README you will find all requirements you need to met before you can 
         a) use the following command to install VMware SDK:
            $> sudo -i (or su BUT NEVER sudo -s!)
            $> http_proxy="" ftp_proxy="" ./vmware-install.pl -d
+	      (-d will not ask you for the installation paths and uses the default ones instead)
 
         b) the VMware SDK HAVE TO end with the following message:
+
+		********************************************************************************
                 The installation of vSphere CLI 5.1.0 build-780721 for Linux completed 
                 successfully. You can decide to remove this software from your system at any 
                 time by invoking the following command: 
                 "/usr/bin/vmware-uninstall-vSphere-CLI.pl".
+
                 This installer has successfully installed both vSphere CLI and the vSphere SDK 
                 for Perl.
-           (or similar but it HAVE TO be something like that! otherwise the install has not finished correctly)
+		*******************************************************************************
+           (or similar but it HAVE TO be something like that! otherwise the install has NOT finished correctly)
+
+	c) if you DO NOT see the message in b) the SDK is NOT installed/configured correctly and 
+	   vEMan will NOT work!
+
+	   Now ensure the correct installation by executing: 
+
+		vmware-cmd --version
+
+	   It should print out something like this:
+
+		vSphere SDK for Perl version: 5.1.0
+		Script 'vmware-cmd' version: 5.1.0
+
+	   This is MANDANTORY. If you get a password prompt or an error message you need to start over at a)
+	   You should also take a look into the "Installation problems" section some lines later in this doc.
 
 2) unpack vEMan in a temporary directory
         $> mv vEMan_vxX.tgz /tmp 
@@ -48,11 +68,11 @@ Installation problems:
 
 Distribution specific convenience hints:
 
-    on Fedora (17) you need to have those packages installed for vEMan and the VMware SDK:
-        $> sudo yum install libuuid-devel yad cpan perl-XML-LibXML 
+    on Fedora (17 , 19) you need to have those packages installed for vEMan and the VMware SDK:
+        $> sudo yum install libuuid-devel yad cpan perl-XML-LibXML perl-Crypt-SSLeay 
 
-    on Ubuntu (tested on 12.04) you should run this otherwise SDK will NOT install:
-        (for a recent yad version:) $> sudo add-apt-repository ppa:webupd8team/y-ppa-manager
+    on Ubuntu (tested on 12.04, 14.04) you should run this otherwise SDK will NOT install:
+        (when using Ubuntu < 14.04 ) $> sudo add-apt-repository ppa:webupd8team/y-ppa-manager
         $> sudo apt-get update
-        $> sudo apt-get install yad libxml-libxml-perl libssl-dev
+        $> sudo apt-get install yad libxml-libxml-perl libssl-dev libcrypt-ssleay-perl
 

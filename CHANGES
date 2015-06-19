@@ -17,7 +17,6 @@ MASTER // MASTER
 		new: identical info header in all important documents
 		new(!): added a TROUBLEshooting file with important hints if you run into problems
 				AND: cleaned up README, UPGRADE, INSTALL accordingly
-		new(!): The very first RC of vEMan v1.0 is near! ;o)
 		fix: Download-links for OVFtool
 		new: easy howto for Ubuntu added to INSTALL documentation
 		fix(!): re-coded ovftool handling because v2.0.1 was removed by VMware
@@ -47,8 +46,10 @@ MASTER // MASTER
 					It needs some more work on flushing the caches but in the meantime use the refresh button
 					(several times) if the VM is still not in on/offline state e.g. That is not a specific
 					problem within the VM editor module but a generic one..
-		
-		Have fun! And keep in mind: BUGSQUASHING-TIME IS NEAR (RC-1 will come...)!!
+		new: added some more hints to the installation process of the VMware SDK
+		new: updated installation info for fedora in INSTALL
+	
+		Have fun! 
 
 v0.9.6  // 2013-03-25	new: some troubleshooting tip in upgrade guide
 			new(!): ATTENTION -> READ the UPGRADE guide when you have a 

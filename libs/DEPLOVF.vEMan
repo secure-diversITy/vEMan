@@ -83,7 +83,7 @@ F_DEPLOVF()
 	# Either the source is not valid (e.g. not OVF/VMX) or is not reachable over the internet.
 	# So the following check ensures that the source can be read before proceeding the ovf import.
 	# This will not completely solve faulty imports but it's 1 step further on the way to handle OVF import probs.
-	all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL --machineOutput \"$OVFSRC\"
+	all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL "$OVFSRC"
 	VERSRC=$?
 	echo "DEBUG: VERSRC was: >$VERSRC<"
 	if [ "$VERSRC" -ne 0 ];then
