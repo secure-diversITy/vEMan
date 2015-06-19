@@ -1,0 +1,30 @@
+# Choose from different deploy options
+F_DEPLCHOOSER()
+{
+        if [ ! -z "$PARENTF" ];then
+                echo "DEBUG: Last function was: $PARENTF"
+        else
+                echo "DEBUG: No parent function defined."
+                PARENTF=F_ESXMGR
+        fi
+        echo "DEBUG: choose how to deploy.."
+        $YAD --window-icon="$LOGO" --title="$TITLE (Deploy mode)" --on-top --center --text "How do you want to deploy?\n" \
+             --button "New(not ready yet)":0  \
+             --button "OVF/VMX":1 \
+             --button=Cancel
+        case $? in
+		0)
+		echo "DEBUG: deploy a new VM choosen.."
+		F_DEPLNEW
+		;;
+		1)
+		echo "DEBUG: deploy ovf/vmx choosen.."
+		F_DEPLVMX
+		;;
+		*)
+		echo "DEBUG: GOT NO ANSWER OR ABORTED BY USER."
+		$PARENTF
+		;;
+	esac
+}
+export -f F_DEPLCHOOSER
