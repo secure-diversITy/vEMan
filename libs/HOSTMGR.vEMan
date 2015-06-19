@@ -7,10 +7,10 @@ F_HOSTMGR()
 	while [ -z "$HANS" ];do
 
 		https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server "$SRV" --machinereadable --fields \
-			boottime,cpumodel,cpuspeed,cpuusage,memorysize,memoryusage,maintenancemode,rebootrequired,software \
-			| $YAD --window-icon="$LOGO" --center --title="$TITLE (Host Manager)" --width=600 --height=350 \
-				--text "Current information is queried live from the ESX.\nThis can take a moment.\n" \
-				--list --column Property --column "Current value" --button=Refresh:2 --button=Users:1 --button="Return to vEMan":3
+			hostname,boottime,cpumodel,cpuspeed,cpuusage,memorysize,memoryusage,maintenancemode,rebootrequired,software \
+			| $YAD --window-icon="$LOGO" --center --title="$TITLE (Host Manager)" --width=700 --height=500 \
+				--text "Current information is queried live from the ESX.\n\nPLEASE GIVE THIS A MOMENT TO FULLY LOAD!\n" \
+				--list --column Property --column "Current value" --button=Refresh:2 --button=Users:1 --button="ESX operations":99 --button="Return to vEMan":3
 		HANS=$?
 		if [ "$HANS" -eq 252 ];then
         		echo DEBUG: Aborted by user in F_HOSTMGR
@@ -29,6 +29,11 @@ F_HOSTMGR()
 			3)
 			echo "DEBUG: Returning to vEMan..."
 			F_ESXMGR
+			;;
+			99)
+                        echo "DEBUG: Open ESX operations..."
+			F_PARENTF F_HOSTMGR
+			F_ESXOPER
 			;;
 			*)
                 	echo "F_HOSTMGR ERROR: Unspecified action ($HANS) defined"

@@ -23,12 +23,12 @@ F_ESXMGR()
                                 --text "Select and enjoy your task \n\n\
 Info:\n\
    - Doubleclick a VM, or select 'VM Manager' will open VM specific settings\n\
-   - 'Deploy OVF/VMX' will open the OVF deployment wizard to upload your VM\n\
+   - 'Deploy' will open the deployment wizard to upload your VM\n\
    - 'ESX Manager' will open the ESX host Manager\n\
    - 'Refresh' will enforce a refresh of the VM list\n" \
                                 --column="State":IMG \
                                 --column="Detected VMs on $SRV" \
-                                --button="Deploy OVF/VMX":1 \
+                                --button="Deploy":1 \
                                 --button="VM Manager":11 \
                                 --button="ESX/ESXi":12 \
                                 --button="Refresh":20 \
@@ -68,7 +68,7 @@ Info:\n\
                 ;;
                 1)
                 F_PARENTF F_ESXMGR
-                ACTION=Deploy_VMX
+                ACTION=DeployChooser
                 ;;
                 12)
                 ACTION=ESXmanager

@@ -1,16 +1,17 @@
-# Manage power (shutdown, stop, reboot, ...)
-F_POWER()
+# Manage mode (shutdown, maintenance, reboot, ...)
+F_ESXOPER()
 {
         F_GETCFG
-
+	F_PARENTF F_HOSTMGR
         unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER
-
-        if [ -z "$TARGETVM" ];then
-                echo " DEBUG: ERROR: No VM host selected?"
-                MSG="ERROR: You haven't selected a target VM. Please try again\n"
+	SRVDNS=$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server "$SRV" --machinereadable --fields hostname --machinereadable |grep -v "Host Name")
+        if [ -z "$SRV" ]||[ -z "$SRVDNS" ];then
+                echo "DEBUG: ERROR: No ESX host!"
+                MSG="ERROR: No ESX server specified (logged in: $SRV,result from ESX: $SRVDNS)?! This should not occur. Please try again\n"
                 $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
                 F_ESXMGR
         fi
+	echo "DEBUG: detected ESX hostname: $SRVDNS"
 
         while [ -z "$PWRANS" ]|| [ -z "$PWRID" ];do
 
@@ -19,17 +20,14 @@ F_POWER()
 		# \\n <short name> \\n <description> \\n <numeric unique id> \\n \
 
 		read -r PWRCONTENT << __EOPWRCONTENT
-\\nStart/Resume\\nResume or start an offline VM\\n1\\n\
-\\nPower Off\\nSame as CUTTING OF the power cable. This will N-O-T shutdown the VM.\\n2\\n\
-\\nSuspend\\nSuspend a powered on VM.\\n3\\n\
-\\nReset\\nHARD reset. This will N-O-T shutdown the VM but force a reset of it instead\\n4\\n\
-\\nReboot (requires vmtools)\\nDo a CLEAN reboot with VMware tools.\\n5\\n\
-\\nShutdown (requires vmtools)\\nDo a CLEAN shutdown with VMware tools.\\n6\\n\
-\\nStandby (requires vmtools)\\nPAUSE the VM with VMware tools. Use 'Start/Resume' to resume.\\n7
+\\nEnter Maintenance\\nEnter maintenance mode. You need to do this before reboot/halt ESX too.\\n1\\n\
+\\nExit Maintenance\\nExit maintenance mode.\\n2\\n\
+\\nReboot\\nNEED Maintenance on first! Will reboot this ESX server!\\n3\\n\
+\\nShutdown\\nNEED Maintenance on first! Will shutdown ESX completely!!\\n4
 __EOPWRCONTENT
 
-                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --window-icon="$LOGO" --center --title="$TITLE (Power Manager)" --width=900 --height=300 --list \
-                        --text "Select an action and click at the 'Do' button: \n\n(selected system: $TARGETVM)\n" \
+                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --window-icon="$LOGO" --center --title="$TITLE ($SRVDNS operations)" --width=900 --height=300 --list \
+                        --text "Select an action and click at the 'Do' button: \n\n (your ESX server: $SRVDNS)\n" \
 			--radiolist\
 			--column=Click \
                         --column=Action \
@@ -55,31 +53,22 @@ __EOPWRCONTENT
 			echo "DEBUG: power dialog canceled by user without selecting any action"
                 else
 	
-			MSG="Host: $TARGETVM\n\nDo you really want to $PWRSHORT the above host?"
+			MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $PWRSHORT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
 			ABMSG=" Skipping action because aborted by user. "
 
 			case $PWRID in
                            1) # start/resume
-				DETPOWER=poweron
+				DETPOWER=enter_maintenance
                            ;;
                            2) # power off
-                        	DETPOWER=poweroff
+                        	DETPOWER=exit_maintenance
 		  	   ;;
                            3) # suspend
-                                DETPOWER=suspend
-                           ;;
-                           4) # reset
-                                DETPOWER=reset
-                           ;;
-                           5) # reboot
                                 DETPOWER=reboot
                            ;;
-                           6) # shutdown
+                           4) # reset
                                 DETPOWER=shutdown
                            ;;
-                           7) # standby
-                                DETPOWER=standby
-			   ;;
 			   *) # nothing selected
 				MSG="ERROR: You haven't selected an action. Please try again\n"
         	        	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Try again"
@@ -89,7 +78,10 @@ __EOPWRCONTENT
 			if [ "$PWRID" -ne 222 ]||[ -z "$DETPOWER" ];then
 				$YAD --window-icon="$LOGO" --title="$TITLE (Confirm action)" --on-top --center --text "$MSG" --image dialog-error --button="YES DO IT":0 --button="Oh no cancel it!":222
 				if [ $? -eq 0 ];then
-					TARGETVM="$TARGETVM" THEPOWER=$DETPOWER $VLIBFNC F_POWERACT
+					https_proxy="" $XHOSTOPS --sessionfile $AUTHSESS --server "$SRV" --target_host "$SRVDNS" --operation "$DETPOWER" \
+                                          |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $DETPOWER" --pulsate --auto-close)\
+                                          | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $DETPOWER" --button=OK
+
 				else
 					MSG="$ABMSG"
 					$YAD --window-icon="$LOGO" --title="$TITLE (aborted)" --on-top --center --text "$MSG" --button="OK"
@@ -100,6 +92,6 @@ __EOPWRCONTENT
 			fi
 		fi				
         done
-
+	F_HOSTMGR
 }
-export -f F_POWER
+export -f F_ESXOPER
