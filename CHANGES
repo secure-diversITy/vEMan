@@ -10,15 +10,15 @@ vEMan History
 -----------------------------------------
 
 MASTER // MASTER
-		new(!): introduced several ESX operation actions!
-			now you can do the following operations on your ESX:
-			- enter maintenance mode
-			- exit maintenance mode
-			- reboot (requires maintenance mode on)
-			-shutdown (requires maintenance mode on)
-		new: some preparations for new deploy mode
-		new: hint for v6.0 perl SDK in README
- 		new: added a skip-button for creating vEMan desktop icon when installing
+                new(!): introduced several ESX operation actions!
+                       now you can do the following operations on your ESX:
+                       - enter maintenance mode
+                       - exit maintenance mode
+                       - reboot (requires maintenance mode on)
+                       -shutdown (requires maintenance mode on)
+                new: some preparations for new deploy mode
+                new: hint for v6.0 perl SDK in README
+		new: added a skip-button for creating vEMan desktop icon when installing
 		new(!): introducing the first official vEMan Compendium!!!! Check it out on the project page.
 		fix: license was not displayed correctly on smaller screens.. 
 		new: changed development CVS tool to GIT instead of SVN. GIT is so damn great.. 
