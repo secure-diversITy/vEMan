@@ -1,8 +1,4 @@
-####################################################################################
-#  NAME:    README
-#  PLACE:   ./
-#  DESC:    Important hints and requirements
-####################################################################################
+# README #
 
 Known Issues
 --------------
@@ -32,8 +28,8 @@ Requirements
 	netcat, yad (***), a vncviewer (like tightvncviewer or similar), openssl,
 	bash, grep, sed, python (v2.5 or higher)
 
-    Recommended versions
-    --------------------
+Recommended versions
+--------------------
     
     Currently recommended and well tested environment is:
     
@@ -70,8 +66,8 @@ Footnotes
         Since v0.9.x vEMan is tested with VMware SDK for Perl v5.1 and higher only. 
         That means NOT that previous Perl Toolkits will NOT work anymore - but it
         means I will not TEST previous SDKs anymore..
-
-   (**) ATTENTION: v2.1.0 doesn't work! Use v2.0 or try any version higher than v2.1.0
+        
+    (**) ATTENTION: v2.1.0 doesn't work! Use v2.0 or try any version higher than v2.1.0
 		OVFtool v2.0.1 (only one(!) known to work very well) at VMware: 
 		https://my.vmware.com/group/vmware/get-download?downloadGroup=OVF-TOOL-2-0-1
         (seems to be thrown away by VMware??!)
@@ -80,7 +76,7 @@ Footnotes
         Untested ovftool v3.0.1 (install this if you are brave or do not want to
         deploy any VMs but using all the other features):
 		https://my.vmware.com/group/vmware/get-download?downloadGroup=OVF-TOOL-3-0-1
-
-  (***) yad is a fork of zenity (Homepage: http://code.google.com/p/yad/
+        
+    (***) yad is a fork of zenity (Homepage: http://code.google.com/p/yad/
         DEB packages available ;o) 
 
