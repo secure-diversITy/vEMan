@@ -1,0 +1,14 @@
+# checks the power state of a given VM
+F_CHKPWR()
+{
+        TARGETVM="$1"
+        unset FULLVMPATH
+        [ -z "$TARGETVM" ] && F_ERR "Aborted because TARGETVM is missing for powerstatus."
+        # check the power state of a VM
+        F_GETVMPATH "$TARGETVM"
+        PWRGET=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS --server $SRV $FULLVMPATH getstate )
+        [ -z "$PWRGET" ] && F_ERR "Cannot determine powerstatus!"
+        PWRSTATE="${PWRGET//*= /}"
+        [ -z "$PWRSTATE" ] && F_ERR "Cannot convert powerstatus!"
+}
+export -f F_CHKPWR

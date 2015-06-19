@@ -1,0 +1,18 @@
+# a generic message window without exiting and without fancy other stuff
+F_MSG()
+{
+        if [ -z "$1" ];then
+                MSG="No message specified (this is an internal error)"
+        else
+                MSG="$1"
+        fi
+        MSG="${MSG}"
+
+	# we will always print the message to the stdout, too
+	echo "DEBUG: $MSG"
+
+        $YAD --window-icon="$LOGO" --title="$TITLE (InfoBox)" --on-top --center --text "$MSG" --image dialog-information --selectable-labels --button=OK
+	
+}
+
+export -f F_MSG

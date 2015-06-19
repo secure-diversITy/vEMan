@@ -1,0 +1,6 @@
+# check for the ESX version 
+F_CHKESXVER(){
+	unset ESXCHK
+	ESXCHK=$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS  --server $SRV --fields=software --machinereadable | egrep -o "[[:digit:]]\.[[:digit:]]\.[[:digit:]]" |tr -d "." )
+}
+export -f F_CHKESXVER

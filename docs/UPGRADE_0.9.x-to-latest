@@ -1,0 +1,50 @@
+###########################################################################################
+#  NAME:    UPGRADE
+#  PLACE:   ./ and latest UPGRADE file within docs/
+#  DESC:    Upgrade guide and hints
+#           This Upgrade Guide is for >v0.9.5< and higher versions.
+#           If you want to upgrade from an older version than v0.9.5 you need to read the
+#           corresponding docs/UPGRADE_0.X.X-to-X.X.X depending on your current version!
+###########################################################################################
+
+Upgrading vEMan is easy ;-)
+
+HINT:
+***************************************************************************************************
+Keep in mind that vEMan is still in BETA state and so there can be:
+
+- heavy changes in code
+- heavy changes in file structure
+- complete replacement or deletion of variables and vEMan files
+
+That also means that in this state an upgrade may require manual changes and/or re-adding your 
+configuration options and the behaviour of functions can change, too.
+***************************************************************************************************
+
+I highly recommend to upgrade this way:
+
+1) Rename your current vEMan folder, e.g.:
+        $> mv [INSTALL-DIR]/vEMan_XXX/ [INSTALL-DIR]/vEMan_BAK/
+        $> mv ~/.vEMan ~/.vEMan_BAK (here are your settings stored like last ESX etc)
+
+2) Download the new vEMan version
+        $> cd /tmp
+        $> wget http://sourceforge.net/projects/veman/files/latest/download
+
+3) unpack it in the temporary directory
+        $> tar xvzf vEMan_vxX.tgz
+
+4) start vEMan from within the temporary directory
+        $> cd /tmp/vEMan_vXXX/
+        $> chmod +x && ./vEMan (the installer guides you through the rest of installation)
+
+5) Do NOT copy your previous -user- settings (etc/uservars_vEMan.cfg) by overwriting the new one!!
+   You need to compare the new user settings format with your older one because it is possible that
+   the settings and vars change in a new version.
+
+If the new vEMan version works as expected you can delete the folder you renamed in 1) otherwise
+you can easily switch back to the previous version.
+
+If you're running into problems you can take a look into docs/TROUBLE file on details for
+troubleshooting vEMan.
+

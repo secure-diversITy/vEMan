@@ -1,0 +1,55 @@
+# The logon pop-up
+F_LOGIN()
+{
+        if [ "$SETAV" -eq 1 ];then
+                . $CFG && echo "DEBUG: setting file included successfully"
+        fi
+
+        unset SELECTION YANS
+	# prepare known targets
+	if [ -s $CFGSRV ];then
+		KNOWNSRVS=$(cat $CFGSRV |cut -d "=" -f2 |tr "\n" "|" |tr -d '"')
+	else
+		KNOWNSRVS=""
+	fi
+        while [ -z "$SELECTION" ]||[ -z "$YANS" ]||[ -z $VUSER ]||[ -z $DPASS ]||[ -z $SRV ];do
+                SELECTION=$($YAD --image="$LOGO_BIG" --item-separator="|" --image-on-top --window-icon="$LOGO" --title="$TITLE (Manage with ease)" --width=680 --height=200 \
+                                --center --form --selectable-labels --text "  Check for the newest version at: $LATESTVER\n\n  Please enter your ESX server and credentials" \
+				--field="ESX/vSphere server":CBE "$KNOWNSRVS" \
+                                --field="Username" "$VUSER" \
+                                --field="Password\n(passes with | and \" will not work atm)":H \
+                                --button="Login":23 \
+                                --always-print-result)
+                YANS=$?
+
+                echo "DEBUG: selected $SRV, $VUSER, XXXXXXX (PW hidden), button id: $YANS"
+
+                [ "$YANS" -eq 252 ]&& echo aborted by user && F_EXIT
+                if [ "$DEBUG" -eq 0 ];then
+                        F_MKCFG
+                else
+                        echo "DEBUG: Debug mode enabled so we will not recreate config"
+                        F_GETCFG
+                fi
+                
+        done
+
+        echo DEBUG: Answer was $YANS
+
+        case "$YANS" in
+                22)
+                ACTION=Deploy_VMX
+                ;;
+                0|23)
+                ACTION=Manage_VM
+                ;;
+                *)
+                echo "F_ESXMGR ERROR: Unspecified action ($YANS) defined"
+                F_ERR "Unspecified action ($YANS) defined (F_LOGIN)"
+                ;;
+        esac
+
+        echo "DEBUG: $ACTION was choosen..."
+}
+
+export -f F_LOGIN

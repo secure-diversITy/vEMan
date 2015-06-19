@@ -1,0 +1,22 @@
+# Add a new user to an ESX/i
+F_ADDUSR()
+{
+        F_GETCFG
+
+	F_PARENTF F_ADDUSR
+	F_MGUSR
+	F_PARENTF F_USERMGR
+	
+	ADDESX=$(https_proxy="" $XUSRMGR --sessionfile $AUTHSESS --server "$SRV" -e user --operation add --login=$NEWUSR --newpassword="$NEWPW1" --role "$NEWROLE" $ASHELL 2>&1) 
+	
+	if [ $? -eq 0 ];then
+		F_MSG "The new user $NEWUSR was added successfully"
+		echo "DEBUG: $ADDESX"
+	else
+		F_MSG "An error occured while adding the user to your ESX:   \n\n$ADDESX\n"
+	fi
+
+	$PARENTF
+}
+
+export -f F_ADDUSR

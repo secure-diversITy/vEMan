@@ -1,0 +1,108 @@
+
+Basic idea from: http://bitsmarts.blogspot.de/2013/01/enable-vnc-in-vmware-esxi-51.html
+###########################################################################################
+The following guide was tested successfully on ESXi 5.1 (free).
+
+Starting from ESX v5.1 on the ESX firewall is automatically enabled.
+
+You either need to disable the firewall completely 
+(which I would not recommend but depends on you and your security concerns) 
+or to follow the steps described here.
+
+The quickest and easiest way to test where the problem occurs is nevertheless 
+to disable the ESX firewall - at least - temporarly. To do so follow those steps here:
+
+1) login as user "root" to your ESX by SSH
+2) execute this command:
+	$> esxcli network firewall set --enabled false
+	(detailed information here: http://kb.vmware.com/kb/2005284)
+3) then start vEMan and try to connect to a VM console
+
+If that works fine it IS a problem with the ESX firewall which is not allowing you to connect to the VM console.
+
+Regardless of the above result you should enable the ESX firewall again:
+
+1) login as user "root" to your ESX by SSH
+2) execute this command:
+	$> esxcli network firewall set --enabled true
+
+
+**************************************************************************************
+
+IF vEMan was able to open VM consoles when the firewall is completely disabled follow
+the following guide to add a permanent firewall rule for vEMAn.
+
+**************************************************************************************
+
+Enable vEMan console (VNC) in VMware ESX(i) 5.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1) Enable SSH in ESX(i) (Open ESX server console and open 'Troubleshooting Options')
+2) Login with SSH and as user 'root' to the ESX
+3) Enable VNC persistent:
+
+	vi /etc/rc.local.d/local.sh
+	(add the lines between the:
+	#----> vEMan VNC console <----#
+	tags)
+
+-----------------------------------------------------------------
+#!/bin/sh
+# local configuration options
+# Note: modify at your own risk!  If you do/use anything in this
+# script that is not part of a stable API (relying on files to be in
+# specific places, specific tools, specific output, etc) there is a
+# possibility you will end up with a broken system after patching or
+# upgrading.  Changes are not supported unless under direction of
+# VMware support.
+
+#----> vEMan VNC console <----#
+cat > /etc/vmware/firewall/enablevnc.xml <<__EOFVNC                 
+<!-- Firewall configuration information -->                         
+<ConfigRoot>                                                        
+ <!-- VNC -->                                                    
+  <service id="1000">                              
+  <id>VNC</id>                                     
+    <rule id='0000'>                               
+      <direction>outbound</direction>      
+      <protocol>tcp</protocol>       
+      <porttype>dst</porttype>       
+      <port>                         
+       <begin>5900</begin>           
+       <end>5999</end>               
+      </port>                        
+    </rule>                   
+    <rule id='0001'>          
+      <direction>inbound</direction>
+      <protocol>tcp</protocol>      
+      <porttype>dst</porttype>      
+      <port>                        
+       <begin>5900</begin>          
+       <end>5999</end>              
+      </port>                       
+    </rule>                   
+    <enabled>true</enabled>   
+    <required>false</required>
+   </service>                 
+</ConfigRoot>                 
+__EOFVNC                      
+                              
+# We need a short sleep to make sure firewall reload works:
+echo 'Activating custom rule set..' && sleep 10s && esxcli network firewall refresh
+#----> vEMan VNC console <----#
+
+exit 0
+-----------------------------------------------------------------
+	
+4) Test it:
+	sh /etc/rc.local.d/local.sh && esxcli network firewall ruleset list |grep VNC
+	^^^^^^
+	-> should display "VNC true" and vEMan console should work as expected now!
+
+5) Reboot to check persistence 
+	After rebooted, check it by logging in as root (SSH) again and execute:
+	esxcli network firewall ruleset list |grep VNC
+	^^
+	The last cmd should display "VNC true" and vEMan console should work as expected
+
+~

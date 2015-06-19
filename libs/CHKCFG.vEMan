@@ -1,0 +1,45 @@
+# check for existing config dir and files
+# SETAV=0 means setting file was not available and =1 means it is
+F_CHKCFG()
+{
+        echo "DEBUG: checking config reqs.."
+        # configuration
+        if [ ! -d "$CFGDIR/$SRV" ];then
+                echo config dir missing...
+                echo creating config dir
+                mkdir -vp "$CFGDIR/$SRV"
+                SETAV=0
+        else
+                if [ -f $CFG ];then
+			# include the last used setting file
+                        . $CFG && echo DEBUG: Setting file included.. && export VUSER SRV
+                        SETAV=1
+                else
+                        echo "DEBUG: setting file missing.."
+                        SETAV=0
+                        F_LOGIN
+#                       $YAD --title="$TITLE (configuration)" --width=600 --text "Hint: Do not use a password with a pipe character" --form \
+#                               --field=Username \
+#                               --field=Password:H \ 
+#                               --field=Server \
+#                               --field="Proxy server required?\n (type in: proxy=your-proxy:PORT)" 
+#                               > $CFG
+                fi
+		# include sources file
+                if [ -f "$SOURCES" ];then
+                        . $SOURCES && echo "DEBUG: Source file included.." && export  LASTSOURCE
+                else
+                        echo "DEBUG: No source file detected."
+                fi
+		# include the server specific setting file
+		SRV_CFG="$CFGDIR/$SRV/lastovf.cfg"
+		if [ -f "$SRV_CFG" ];then
+			. "$SRV_CFG" && echo "DEBUG: Server setting file included.." && export LASTNET LASTSTORE SRV_CFG LASTSOURCE
+		else
+			echo "DEBUG: Can't find $SRV_CFG file, nothing to include."
+		fi 
+        fi
+        echo "DEBUG: config reqs checks (F_CHKCFG) finished."
+}
+
+export -f F_CHKCFG

@@ -1,0 +1,11 @@
+# this will do the given power manager action
+F_POWERACT()
+{
+	F_GETCFG
+        https_proxy="" $XVMCONTRL --sessionfile $AUTHSESS --server $SRV --vmname $TARGETVM --operation $THEPOWER \
+                |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $THEPOWER" --pulsate --auto-close)\
+                | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $THEPOWER" --button=OK
+
+}
+
+export -f F_POWERACT

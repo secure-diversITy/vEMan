@@ -1,0 +1,47 @@
+# write the settings
+F_RWOVFSET()
+{
+	echo "LASTSTORE=\"$OVFDS\"" > $SRV_CFG
+	echo "LASTNET=\"$OVFNET\"" >> $SRV_CFG
+	echo "LASTSOURCE=\"$OVFSRC\""  >> $SRV_CFG
+}
+
+# save the entered values
+F_SAVEOVFSET()
+{
+	# save the last used ovf info into esx config
+	if [ ! -d "$CFGDIR/$SRV" ];then
+		mkdir -v "$CFGDIR/$SRV"
+		echo "DEBUG: server specific settings DIRECTORY does not exist. Creating it."
+		F_RWOVFSET
+	else
+		if [ -f "$SRV_CFG" ];then
+			# this will search and replace the settings if found.
+			echo "DEBUG: server specific settings file does exist. Updating it with last entered values..."
+			grep "LASTSTORE" $SRV_CFG > /dev/null
+			if [ $? -eq 0 ];then
+				sed -i "s/LASTSTORE=.*/LASTSTORE=\"$OVFDS\"/g" $SRV_CFG && echo "DEBUG: Changed Storage value"
+			else
+				echo "LASTSTORE=\"$OVFDS\"" >> $SRV_CFG && echo "DEBUG: Added missing Storage value"
+			fi
+			grep "LASTNET" $SRV_CFG > /dev/null
+			if [ $? -eq 0 ];then
+				sed -i "s/LASTNET=.*/LASTNET=\"$OVFNET\"/g" $SRV_CFG && echo "DEBUG: Changed Network value"
+			else
+				echo "LASTNET=\"$OVFNET\"" >> $SRV_CFG && echo "DEBUG: Added missing Network value"
+			fi
+			grep "LASTSOURCE" $SRV_CFG > /dev/null
+			if [ $? -eq 0 ];then
+				# OVF can be a web address so we need a good separator if we do not want to convert the URI
+				sed -i "s|LASTSOURCE=.*|LASTSOURCE=\"$OVFSRC\"|g" $SRV_CFG && echo "DEBUG: Changed Source value"
+			else
+				echo "LASTSOURCE=\"$OVFSRC\"" >> $SRV_CFG && echo "DEBUG: Added missing Source value"
+			fi
+		else
+			echo "DEBUG: server specific settings FILE does not exist. Creating it."
+			F_RWOVFSET
+		fi
+	fi
+
+}
+export -f F_SAVEOVFSET F_RWOVFSET

@@ -1,0 +1,31 @@
+# Manipulating user settings like password etc
+F_CHGUSR()
+{
+	MODUSR="$1"
+	if [ -z "$MODUSR" ];then
+		echo "DEBUG: user variable $1, $MODUSR is empty!"
+		F_MSG "User variable $1, $MODUSR is empty! Cannot proceed"
+		F_PARENTF F_USERMGR 
+		echo "DEBUG: Now i try to go back to the user manager.."
+		$PARENTF
+	else
+		echo "DEBUG: selected username was $MODUSR"
+	fi
+        F_GETCFG
+
+	F_PARENTF F_CHGUSR
+	F_MGUSR $MODUSR
+	F_PARENTF F_USERMGR
+
+	CHGESX=$(https_proxy="" $XUSRMGR --sessionfile $AUTHSESS --server "$SRV" -e user --operation modify --login=$NEWUSR --newpassword="$NEWPW1" --role "$NEWROLE" $ASHELL 2>&1) 
+	if [ $? -eq 0 ];then
+		F_MSG "Settings for $NEWUSR changed successfully"
+		echo "DEBUG: $CHGESX"
+	else
+		F_MSG "An error occured while modifying the user to your ESX:   \n\n$CHGESX\n"
+	fi
+
+	$PARENTF
+}
+
+export -f F_CHGUSR

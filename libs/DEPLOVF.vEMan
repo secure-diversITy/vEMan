@@ -1,0 +1,120 @@
+# Deploy OVF and/or VMX
+F_DEPLOVF()
+{
+	unset OVFNM VERSRC
+        F_GETCFG
+        ERROVF1="-1"
+	[ -z "$LASTNET" ]&& LASTNET="type-in-exact-NETWORK-name"
+	[ -z "$LASTSTORE" ]&& LASTSTORE="type-in-exact-STORAGE-name"
+	
+	F_SCANDS
+	F_SCANNET
+
+	echo "DEBUG: Set to initial values"
+        while [ -z "$OVFSRC" ]||[ -z "$OVFNET" ]||[ -z "$OVFDS" ]||[ "$ERROVF1" -eq "-1" ];do
+                OVFCFG=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy OVF/VMX)" --width=650 --form --item-separator="|" \
+                                --field="OVF/VMX source (type in URL or browse to local file)":SFL "$LASTSOURCE" \
+                                --field="Target ESX server":SFL "$SRV" \
+                                --field="Target 'Network Name'":CBE "$NETS" \
+                                --field="Target 'Data Storage'":CBE "$STORES" \
+                                --field="Autoaccept EULA":RO "EULA will be AUTO-accepted" \
+                                --field="Power on after deployed":CHK \
+                                --always-print-result)
+                ERROVF1="$?"
+                echo "DEBUG: OVFCFG exit result was: $ERROVF1"
+                if [ "$ERROVF1" -eq 1 ]||[ "$ERROVF1" -eq 252 ];then
+                        F_EXIT
+                fi              
+
+                OVFSRC=$(echo "$OVFCFG" | cut -d "|" -f 1)
+                OVFDEST=$(echo "$OVFCFG" | cut -d "|" -f 2)
+                OVFNET="$(echo \"$OVFCFG\" | cut -d '|' -f 3)"
+                OVFDS=$(echo "$OVFCFG" | cut -d "|" -f 4| cut -d "(" -f1)
+                OVFEULA=$(echo "$OVFCFG" | cut -d "|" -f 5)
+                OVFPWR=$(echo "$OVFCFG" | cut -d "|" -f 6)
+        
+		
+        done
+        
+        echo "DEBUG: $OVFSRC , $OVFDEST , $OVFNET , $OVFDS , $OVFEULA , $OVFPWR"
+
+	# save the current entered values into server specific settings file
+	F_SAVEOVFSET
+
+        if [ ! -z "$OVFDEST" ];then
+                        OVFDEST="vi://${OVFDEST}/"
+        fi
+
+# We need to autoaccept all EULAs atm! Otherwise deployment will not work when an EULA exists.
+#       if [ "$OVFEULA" == "TRUE" ];then
+                MSG="HINT: At the moment all EULAs will be autoaccepted!\nEnsure that you have read the license agreement of the OVF carefully"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Hint)" --on-top --center --text "$MSG" --button="I have read the EULA of source appliance"
+                ACPTEULA="--acceptAllEulas"
+#       fi
+
+        if [ "$OVFPWR" == "TRUE" ];then
+                PWRON="--powerOn"
+        fi
+
+        YANS=0
+        while [ -z "$OVFNM" ]||[ -z "$OVFHDD" ];do
+        OVFPROP=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Configure OVF)" --width=650  --form --item-separator="#" \
+                        --field="Type in a name for your new VM" "" \
+                        --field="Choose your target disk type\n (thin and thick are valid for ESX(i)/VI only)":CB \
+                                "thin#thick#monolithicSparse#monolithicFlat#twoGbMaxExtentSparse#twoGbMaxExtentFlat#twoGbMaxExtentSparse#streamOptimized" \
+                        --field="Enable console? (recommended)":CHK TRUE \
+                        )
+                if [ $? -eq 1 ];then    
+                        F_EXIT 
+                fi              
+
+		# we will convert spaces within the VM name..
+		OVFNM=$(echo "$OVFPROP"| cut -d "|" -f1 |tr " " "_" )
+                OVFHDD=$(echo "$OVFPROP" | cut -d "|" -f 2)
+                OVFVNC="$(echo "$OVFPROP" | cut -d "|" -f 3)"
+
+                echo "DEBUG: $OVFNM $OVFHDD $OVFVNC $ACPTEULA $PWRON ${OVFDEST}"
+        done
+
+        # This will create the local ovftool config file which is needed to avoid problems when parsing
+        F_MKOVFCFG
+
+	# The most common mistake or faulty crap happens because of a wrong/invalid source.
+	# Either the source is not valid (e.g. not OVF/VMX) or is not reachable over the internet.
+	# So the following check ensures that the source can be read before proceeding the ovf import.
+	# This will not completely solve faulty imports but it's 1 step further on the way to handle OVF import probs.
+	all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL "$OVFSRC"
+	VERSRC=$?
+	echo "DEBUG: VERSRC was: >$VERSRC<"
+	if [ "$VERSRC" -ne 0 ];then
+		echo "DEBUG: Oops - cannot proceed because the source >$OVFSRC< is not valid! Check log"
+		echo "DEBUG: or use this command to find out more: >http_proxy="" https_proxy="" ovftool $OVFSRC<"
+		F_MSG "Cannot proceed because the source is not valid.\n\nUse this command to find out why:\n\n http_proxy=\"\" https_proxy=\"\" ovftool \"$OVFSRC\""
+		F_ESXMGR
+	else
+		echo "DEBUG:the source >$OVFSRC< is valid" 
+	fi
+
+        # Hint: with ovftool 2.1 it expects the pw WITHIN the command (no echo pipe..) but this is not good 
+	# when the pw contains special chars
+	# Another problem when NOT using --machineOutput is that the progress bar will never work!!!!!
+	# Another hint: This all fail in my test when splitting the one line to multiple ones..
+        echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL $PWRON --machineOutput \
+                $ACPTEULA "$OVFSRC" $OVFDEST | sed -nu 's/.*rogress:\ \([0-9]\{1\}[0-9]\{0,1\}[0]\{0,1\}\)$/\1/p' | $YAD --center --title="$TITLE (Deploying OVF)" --width=650 --progress --progress-text="Deploying \"${OVFNM}\"" --auto-kill --auto-close
+
+        # Unfortunately this captures Strg+C only (and even THAT NOT in all cases) - we still need a check for testing if deployment was ok or not..
+        if [ $? -ne 0 ];then
+                F_ERR "ERROR ($?) occured while deploying..\nTry to execute the following command in a terminal\n\nall_proxy=\"\" ALL_PROXY=\"\" http_proxy=\"\" https_proxy=\"\" $XOVFTOOL --machineOutput $ACPTEULA $OVFSRC $OVFDEST"
+        else
+                echo "DEBUG: Deploying OVF/VMX succeeded."
+		MSG=" Deploying \n\n \"${OVFNM}\"\n\n to $SRV ended successfully."
+		$YAD --window-icon="$LOGO" --title="$TITLE (OVF/VMX deployed)" --on-top --center --width=400 --text "$MSG" --button=Close	
+        	if [ "$OVFVNC" == "TRUE" ];then
+               		TARGETVM="$OVFNM"
+                	F_ENABLEVNC
+        	fi
+        fi      
+
+}
+
+export -f F_DEPLOVF

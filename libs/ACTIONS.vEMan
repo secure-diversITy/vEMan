@@ -1,0 +1,66 @@
+# the action handlers
+F_ACTIONS()
+{
+	F_GETCFG
+
+case "$ACTION" in
+        Deploy_OVF)
+                echo Deploying OVF
+                F_DEPLOVF
+        ;;
+        Deploy_VMX)
+                echo Deploying VMX
+                F_DEPLVMX
+        ;;
+        VMlist)
+		CFILE=( "$TMPonlinevms" "$TMPofflinevms" "$TMPsleepingvms" )
+
+		for cachefile in "${CFILE[@]}";do
+			if [ -f $cachefile ];then
+				rm -vf $cachefile
+			else
+				echo "Cache file $cachefile does not exists so no need to remove"
+			fi
+		done
+                F_ESXMGR
+        ;;
+        Power)
+                F_POWER
+        ;;
+        OpenVMconsole)
+                F_OPENCONSOLE 
+        ;;
+        OpenVMconsoleMGR)
+                F_CONSOLEMGR
+        ;;
+        EnableVMconsole)
+                F_ENABLEVNC
+        ;;
+        DisableVMconsole)
+                F_DISABLEVNC
+        ;;
+        DetectVMconsole)
+                F_DETECTVNC
+        ;;
+        Manage_VM)
+                F_ESXMGR
+        ;;
+        SnapshotMGR)
+                F_SNAPMGR
+        ;;
+        VMmanager)
+                F_VMMGR
+        ;;
+        VMeditor)
+                F_VMEDITOR
+        ;;
+        ESXmanager)
+                F_HOSTMGR
+        ;;
+        *)
+                echo "F_ACTIONS ERROR. Unspecified action ($ACTION) defined."
+                F_ERR "Unspecified action ($ACTION) defined (F_ACTIONS)"
+        ;;
+esac
+}
+export -f F_ACTIONS

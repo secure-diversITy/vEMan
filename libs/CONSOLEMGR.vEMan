@@ -1,0 +1,57 @@
+# the console manager which gives you access to console features like enabling, disabling opening console
+F_CONSOLEMGR()
+{
+        unset VANS CANS
+        if [ -z "$TARGETVM" ];then
+                echo " DEBUG: ERROR: No VM host selected?"
+                MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                F_ESXMGR
+        fi
+
+        while [ -z "$CANS" ];do
+                VANS=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=400 --form \
+                        --field=:LBL\
+                        --field="Selected system":RO \
+                        --field=:LBL\
+                        --button="Open (will enable,too)":11 \
+                        --button="Enable (force)":22 \
+                        --button="Disable":33 \
+                        --button="Close":222 \
+                        false \
+                        "$TARGETVM" \
+                        false\
+			--always-print-result)
+
+		CANS=$?
+		
+                # if user aborts or clicking on close button we set the VANS manually
+                # (we could also use break here but .. well there are so many ways..
+                if [ $CANS -eq 252 ]||[ $CANS -eq 222 ];then
+                        CANS=222
+                fi
+
+		case "$CANS" in
+			11) # open
+                		TARGETVM="$TARGETVM" $VLIBFNC F_OPENCONSOLE
+				echo " DEBUG: CANS is $CANS"
+			;;
+			22) # force enable
+				TARGETVM="$TARGETVM" $VLIBFNC F_ENABLEVNC
+				echo " DEBUG: CANS is $CANS"
+			;;
+			33) # disable
+				TARGETVM="$TARGETVM" $VLIBFNC F_DISABLEVNC
+				echo " DEBUG: CANS is $CANS"
+			;;
+			*) # close manager
+				echo " DEBUG: close button or aborted by user.. (CANS is $CANS)"
+			;;
+		esac
+        done
+
+        echo "DEBUG: closing console manager"
+
+}
+
+export -f F_CONSOLEMGR

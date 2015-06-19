@@ -1,0 +1,92 @@
+# the main window for the esx manager actions
+F_ESXMGR()
+{
+        echo 100 >> $PRGRSFILE
+        echo 0 > $PRGRSFILE
+        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (opening vEMan)" --width=350 --progress --progress-text="collecting data..." --auto-kill --auto-close &
+        
+        unset TARGETVM AANS
+
+        echo 10 >> $PRGRSFILE
+
+        while [ -z "$TARGETVM" ]||[ -z "$AANS" ];do
+                # when deploy func was selected break out
+                [ "$AANS" == "1" ]||[ "$AANS" == "252" ]&& break
+
+                echo "DEBUG: TARGETVM is $TARGETVM , AANS is: $AANS"
+                echo "DEBUG: F_ESXMGR starting"
+                echo 50 >> $PRGRSFILE
+                F_CRTVMLIST
+                echo 100 >> $PRGRSFILE
+                TARGETVM=$(echo -e "${PWRLIST[@]}" | \
+                                $YAD --window-icon="$LOGO" --center --title="$TITLE (Main window)" --width=600 --height=700 --list \
+                                --text "Select and enjoy your task \n\n\
+Info:\n\
+   - Doubleclick a VM, or select 'VM Manager' will open VM specific settings\n\
+   - 'Deploy OVF/VMX' will open the OVF deployment wizard to upload your VM\n\
+   - 'ESX Manager' will open the ESX host Manager\n\
+   - 'Refresh' will enforce a refresh of the VM list\n" \
+                                --column="State":IMG \
+                                --column="Detected VMs on $SRV" \
+                                --button="Deploy OVF/VMX":1 \
+                                --button="VM Manager":11 \
+                                --button="ESX/ESXi":12 \
+                                --button="Refresh":20 \
+                                --always-print-result)
+                AANS=$?
+                if [ "$AANS" -eq 252 ];then
+                        echo DEBUG: Aborted by user in F_ESXMGR
+                        F_EXIT
+                fi
+
+                export AANS
+        
+                echo "DEBUG: target is >$TARGETVM<, action was $AANS"
+                #TARGETVM=$(echo $TARGETVM |cut -d "|" -f1)
+                TARGETVM=$(echo $TARGETVM |tr -d "|"| tr -d "^ " |tr -d "$ ")
+                echo "DEBUG: target was stripped to >$TARGETVM<, action was $AANS"
+                if [ -z "$TARGETVM" ];then
+                        case "$AANS" in
+                                1|12|20)
+                                echo "DEBUG: skipping selection check"
+                                break
+                                ;;
+                                *)
+                                echo "ERROR: No VM host selected?"
+                                MSG="ERROR: You haven't selected a target VM.\nPlease select a VM first and try again\n"
+                                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                                ;;
+                        esac
+                fi
+        done
+
+
+        case "$AANS" in
+                0|11)
+                echo "DEBUG: VM Manager choosen.."
+                ACTION=VMmanager
+                ;;
+                1)
+                F_PARENTF F_ESXMGR
+                ACTION=Deploy_VMX
+                ;;
+                12)
+                ACTION=ESXmanager
+                ;;
+                20)
+                ACTION=VMlist
+                ;;
+                252)
+                F_EXIT
+#               break
+                ;;
+                *)
+                echo "F_ESXMGR ERROR: Unspecified action ($AANS) defined"
+                F_ERR "Unspecified action ($AANS) defined (F_ESXMGR)"
+                ;;
+        esac
+
+        F_ACTIONS
+}
+
+export -f F_ESXMGR

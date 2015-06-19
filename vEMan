@@ -1,0 +1,674 @@
+#!/bin/bash
+##################################################################################################################
+#
+# 
+# Copyright by Thomas Fischer <thomas@nethna.de>
+# Original source available at: http://vEMan.nethna.de
+#
+# vEMan by Thomas Fischer is licensed under a Creative Commons Attribution-NoDerivs 3.0 Unported License.
+# ------------------------------------------------------------------ #
+# You are free:
+#    to Share — to copy, distribute and transmit the work
+#    to make commercial use of the work 
+# Under the following conditions:
+#    Attribution — You must attribute the work in the manner specified by the author or licensor 
+#		   (but not in any way that suggests that they endorse you or your use of the work).
+#    No Derivative Works — You may not alter, transform, or build upon this work. 
+# With the understanding that:
+#    Waiver — Any of the above conditions can be waived if you get permission from the copyright holder.
+#    Public Domain — Where the work or any of its elements is in the public domain under applicable law, 
+#		     that status is in no way affected by the license.
+#    Other Rights — In no way are any of the following rights affected by the license:
+#        Your fair dealing or fair use rights, or other applicable copyright exceptions and limitations;
+#        The author's moral rights;
+#        Rights other persons may have either in the work itself or in how the work is used, such as 
+#	publicity or privacy rights.
+#    Notice — For any reuse or distribution, you must make clear to others the license terms of this work. 
+#	      The best way to do this is with a link to this web page.
+# ------------------------------------------------------------------ #
+# Read the full license at: http://creativecommons.org/licenses/by-nd/3.0/
+#
+# First version created on January 2012
+#
+#
+#
+#################################################################################################################
+#
+# NORMAL USAGE: Modify your user variable file and simply start vEMan
+#
+##################################################################################################################
+
+# get the current path and so on:
+P=$(readlink -f $0)
+B=$(basename $0)
+VPATH="${P%/$B}"
+XVEMANS=$(basename $0)
+
+export VPATH
+
+VETC="$VPATH/etc"
+USERCONF="$VETC/uservars_vEMan.cfg"
+SYSCONF="$VETC/sysvars_vEMan.cfg"
+
+export PERL_LWP_SSL_VERIFY_HOSTNAME
+
+# Include user settings
+if [ -r "$USERCONF" ];then
+	echo "DEBUG: User variable file $USERCONF found."
+else
+	echo "ERROR: Missing user variable file. Creating an example file now.."
+	echo "Please re-install!"
+	echo "Missing conf file: $USERCONF"
+	exit 1
+fi
+
+. "$USERCONF"
+if [ $? -eq 0 ];then
+	echo "DEBUG: User variable file $USERCONF included successfully."
+else
+	echo "DEBUG: User variable file $USERCONF cannot be included!"
+	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "User variable file $USERCONF cannot be included!\nTry to run vEMan at commandline to see debug output." --image dialog-error --button ABORT
+	exit 3	
+fi
+
+
+# include system vars
+. "$SYSCONF"
+if [ $? -eq 0 ];then
+        echo "DEBUG: System variable file $SYSCONF included successfully."
+else
+        echo "DEBUG: System variable file $SYSCONF cannot be included!"
+        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "System variable file $SYSCONF cannot be included!\nTry to run vEMan at commandline to see debug output." --image dialog-error --button ABORT
+        exit 3
+fi
+
+# comma separated list of valid MAIN functions
+MAINFUNCS="F_MKCFG,F_PARENTF,F_HELP,F_VERSION,F_MSG,F_LICENSE,F_INSTALLER,F_ERR,F_REVIEWER"
+
+# include all available functions
+SAVEIFS=$IFS && IFS=$','
+for vMainLibs in $(echo "$MAINFUNCS");do
+        . ${VLIB}/${vMainLibs#F_}.vEMan && echo "DEBUG: included >$vMainLibs< successfully" || echo "DEBUG: Problem while including >$vMainLibs< !"
+done
+IFS="$SAVEIFS"
+
+ALLBINS="$XVEMAN,$YAD,$XECONNECT,$XGETCRT,$XLISTVM,$XVNC,$XOVFTOOL,$XVMCMD,$XNC,$XESXCLI,$VLIBFNC,$XOPENSSL,$XVMINFO,$XVMCONTRL,$XVMSNAPMGR"  	#comma separated list for checking pre-reqs.
+
+FORCECON=0
+
+# file for exit-detection
+EXITED=/tmp/vEMan.exited_$$
+
+[ -f "$EXITED" ] && rm -vf "$EXITED"
+
+# enable/disable debug mode (0/1)
+# this will produce a LOT of output and WILL contain sensitive information like username, password, ..
+# ATM THIS DO NOT WORK - PLEASE START vEMan on CLI WITH 'set +x' INSTEAD  
+DEBUG=0
+
+
+######################################### CODE SECTION #############################################################
+# normally you will not change here anything from here on but only when you want to make vEMan even more better ;o)
+####################################################################################################################
+[ "$DEBUG" -eq 1 ]&& set -x
+
+unset SELECTION FIRSTRUN OFFVMS
+
+# do a clean exit
+F_EXIT()
+{
+	if [ ! -z "$PARENTF" ]&&[ "$PARENTF" == "SAYHELLO" ];then
+		echo "DEBUG: Skipping keepalive file creation because we were executed by it"
+	else
+		# set the keepalive vars to enforce closing the keepalive handler
+		> "$EXITED" && echo "DEBUG: informed keepalive handler about the exit"
+	fi
+
+	# cleanup even when killed or control-c pressed
+	[ ! -z "$1" ]&&[ "$1" == "i-was-killed" ]&& echo "DEBUG: Killed by Control+C or by using SIGINT.."
+	echo "DEBUG: reached exit function"
+	unset DPASS
+	#F_GETCFG
+	. $SYSCONF
+	if [ "$DEBUG" -eq 0 ];then
+		rm -vf $AUTHSESS
+		rm -vf $TMPonlinevms
+		rm -vf $TMPofflinevms
+		rm -vf $TMPsleepingvms
+	else
+		echo "DEBUG: ATTENTION!!! WE DO NOT DELETE SENSITIVE DATA BECAUSE YOU HAVE ENABLED DEBUG MODE!"
+	fi
+	echo "DEBUG: Cleanup end"
+	exit 3
+}
+export -f F_EXIT
+
+
+# Trap keyboard interrupt (control-c)
+trap "F_EXIT i-was-killed" SIGINT
+
+# auth
+F_AUTH()
+{
+	$VLIBFNC F_GETCFG
+	if [ -z "$FIRSTRUN" ];then
+		[ "$DEBUG" -eq 0 ] && rm -vf "$AUTHSESS"
+		FIRSTRUN=1
+	fi
+	export FIRSTRUN
+	F_LOGIN
+}
+
+F_LOGIN()
+{
+	if [ ! -d $CFGDIR ];then
+        	SETAV=0
+	else
+		SETAV=1
+	fi
+
+	if [ "$SETAV" -eq 1 ];then
+		. $CFG && echo "DEBUG: setting file included successfully"
+	fi
+
+	unset SELECTION YANS
+
+        # prepare known targets
+        if [ -s $CFGSRV ];then
+                KNOWNSRVS=$(cat $CFGSRV |cut -d "=" -f2 |tr "\n" "|" |tr -d '"')
+        else
+                KNOWNSRVS=""
+        fi
+
+	KNOWNSRVS=$(cat $CFGSRV |cut -d "=" -f2 |tr "\n" "|" |tr -d '"')
+	while [ -z "$SELECTION" ]||[ -z "$YANS" ]||[ -z "$VUSER" ]||[ -z "$HASHPW" ]||[ -z "$SRV" ];do
+		SELECTION=$($YAD --image="$LOGO_BIG" --item-separator="|" --image-on-top --window-icon="$LOGO" --title="$TITLE (Manage with ease)" --width=680 --height=200 --center --form --selectable-labels --text "  Check for the newest version at: $LATESTVER\n\n  Please enter your ESX server and credentials" \
+                                --field="ESX/vSphere server":CBE "$KNOWNSRVS" \
+				--field="Username" "$VUSER" \
+                        	--field="Password\n(passes with | and \" will not work atm)":H \
+                        	--button="Login":23 \
+				--always-print-result)
+		YANS=$?
+
+		echo "DEBUG: selected $SRV, $VUSER, XXXXXXX (PW hidden), button id: $YANS"
+
+		[ "$YANS" -eq 252 ]&& break
+
+		export VUSER SRV SELECTION 
+		if [ "$DEBUG" -eq 0 ];then
+			echo "DEBUG: making config"
+			F_MKCFG
+		else
+			echo "DEBUG: Debug mode enabled so we will not recreate config"
+			$VLIBFNC F_GETCFG
+		fi
+		
+	done
+
+	echo DEBUG: Answer was $YANS
+
+	case "$YANS" in
+	        22)
+        	ACTION=Deploy_VMX
+	        ;;
+        	0|23)
+	        ACTION=Manage_VM
+	        ;;
+		252)
+		echo "DEBUG: aborted by user"
+		F_EXIT
+		;;
+	        *)
+	        echo "F_ESXMGR ERROR: Unspecified action ($YANS) defined"
+	        $VLIBFNC F_ERR "Unspecified action ($YANS) defined (F_LOGIN)"
+	        ;;
+	esac
+        echo "DEBUG: $ACTION was choosen..."
+	export ACTION
+}
+
+# get the certificate from the connection target
+F_FETCHCRT()
+{
+	[ ! -d "${CRTDIR}" ] && mkdir "${CRTDIR}"
+
+	TCERT="${CRTDIR}/${SRV}_${VMCERT}"
+	if [ -f "$TCERT" ];then
+		echo "DEBUG: Certificate already fetched and available"
+		CRTRET=5
+	else
+		$XGETCRT $SRV $TCERT
+		CRTRET=$?
+	fi
+
+	if [ "$CRTRET" -eq 0 ];then
+		echo "DEBUG: Cert fetched successfully."
+		#$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --width=550 --height=200 --center --text \
+		#	" You need to manually copy the ESX certificate to your local certificate-store.\n This needs root privileges!\n\n" \
+		#	--list --editable --column "Usually that is done by:" \
+		#	"(sudo) cp -av $TCERT $CRTDIR" \
+		#	--button="Yes, I have copied the certificate"	
+	else
+		if [ "$CRTRET" -eq 5 ];then
+			echo "DEBUG: skipping certificate activation"
+		else
+			echo "DEBUG: WARNING - Problem while fetching the connection certificate"
+			$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --width=350 --height=100 --center --text \
+				" There was a problem while fetching the connection certificate.\n It is possible that you cannot authenticate because of that.\n\n If so please restart vEMan in a Terminal." \
+				--button="Continue":0 --button "Close vEMan":1
+			if [ $? -eq 1 ];then
+				echo 100 >> $PREPRG
+				F_EXIT
+			fi
+		fi
+	fi
+}
+
+# create a session file based on the authentication data the user provided
+F_CRTCOOKIE()
+{
+	unset CERR CMSG
+	PREPRG="$CFGDIR/progress.tmp"
+	echo 40 > $PREPRG
+	tail -f $PREPRG | $YAD --window-icon="$LOGO" --center --title="$TITLE (preparing vEMan)" --width=350 --progress --progress-text="preparing vEMan..." --auto-kill --auto-close &
+
+	F_FETCHCRT
+
+	if [ ! -f "$AUTHSESS" ];then
+		echo "No session file detected. Creating one.."
+		F_DEC
+		. $SYSCONF
+		CMSG=$(https_proxy="" $XECONNECT --savesessionfile $AUTHSESS --server $SRV --username "${VUSER}" --password "${DPASS}" 2>&1)
+                echo "$CMSG"|grep -i error > /dev/null
+                CERR=$?
+                if [ "$CERR" -eq 0 ]||[ ! -f "$AUTHSESS" ];then
+                        echo 100 >> $PREPRG
+                        echo "DEBUG: Error ($CERR) checking authentication or creating session cookie file (F_CRTCOOKIE)"
+                        echo "DEBUG: Return message was: ${CMSG}"
+                        $VLIBFNC F_ERR "Target said:\n\n${CMSG}\n"
+#                       F_EXIT
+		else
+			echo "DEBUG: authentication successfull (F_CRTCOOKIE)"
+			echo "DEBUG: Return message was: ${CMSG}"
+		fi
+	else
+		https_proxy="" $XECONNECT --sessionfile $AUTHSESS --server $SRV
+		if [ $? -ne 0 ];then
+			echo "Session file seems to be expired or invalid!"
+			rm -vf "$AUTHSESS"
+			echo 100 >> $PREPRG
+			F_AUTH
+		else
+			echo "DEBUG: Valid session file detected"
+			echo 100 >> $PREPRG
+		fi
+	fi
+}
+
+# this is a simple connection keepalive tracker which ensures that the authentication cookie keeps valid
+# even if the user is idle in vEMan..
+F_SAYHELLO()
+{
+	VRUNNING=0
+	VALIVE=0
+	VOK=1
+	if [ -z "${KEEPALIVE}" ];then
+		echo "DEBUG: WARNING - KEEPALIVE variable is not set?!"
+		echo "DEBUG: Cannot keep this connection alive because of that.."
+	else
+		if [ ! -f "$AUTHSESS" ]||[ -z "$SRV" ]||[ "$FORCECON" -eq 0 ]&&[ ! -f "$EXITED" ];then
+			echo "DEBUG: firstrun. will skip keep-alive..."
+			echo "FORCECON ($FORCECON), FIRSTRUN ($FIRSTRUN)"
+			sleep ${KEEPALIVE}
+		else
+			# only if main program has not been already aborted
+			if [ ! -f "$EXITED" ];then
+				while [ "$VOK" -gt "0" ]&&[ -f "$AUTHSESS" ]&&[ ! -z "$SRV" ];do
+					echo "DEBUG: Running keep-alive handler..."
+
+					# The process for checking if vEMan is still active or not is detected in 3 ways
+					# Each of them has the same weight
+
+					# 1) check if vEMan itself is running:
+					VRUNNING=$(ps aux |grep -v grep |grep "$XVEMANS" |wc -l)
+					# 2) check if the Module wrapper is runnung:
+					VALIVE=$(ps aux |grep -v grep |grep "$VLIBFNC" |wc -l)
+					# put the both results together
+					VOK=$(($VRUNNING + $VALIVE))
+					# 3) try to connect with the current session file:
+					https_proxy="" $XECONNECT --sessionfile "$AUTHSESS" --server "$SRV"
+					if [ $? -ne 0 ];then
+						echo "DEBUG: connection cannot be verified.."
+						echo "DEBUG: Sorry need to restart the auth again.."
+						$VLIBFNC F_ERR "Keep-Alive was not successful!\n\nPlease:\n - close all open vEMan windows!!!!!\n - THEN: click on the Retry button \n\n"
+						# to be sure break out if we come back here
+						break
+					else
+						sleep ${KEEPALIVE}
+					fi
+				done
+				echo "DEBUG: Keep-alive handler stopped by process scan detection."
+				echo "DEBUG: VRUNNING is $VRUNNING, VALIVE is $VALIVE and VOK is $VOK"
+				rm -vf "$EXITED"
+				F_PARENTF SAYHELLO
+				F_EXIT
+			else
+				echo "DEBUG: Keep-alive handler stopped by abort detection."
+				rm -vf "$EXITED"
+				F_PARENTF SAYHELLO
+				F_EXIT
+			fi
+		fi
+		FORCECON=1
+		echo "DEBUG: set FORCECON to $FORCECON"
+		export FORCECON
+		F_SAYHELLO
+	fi
+}
+export -f F_SAYHELLO
+
+# well we can encrypt strings with openssl. We using a static PW instead of a random one but
+# that doesn't really matter because we salten it always so the reuslt will be random everytime
+F_ENC()
+{
+	if [ ! -z "$PASS" ];then
+		HASHPW=$(echo -n "$PASS" | $XOPENSSL enc -aes-256-cbc -a -salt -pass pass:${SALTPW})
+		if  [ ! -z "$HASHPW" ];then
+			#export HASHPW
+			unset PASS DPASS
+		else
+			echo "DEBUG: ERROR - while hashing the password.."
+			$VLIBFNC F_ERR "ERROR while hashing the password"
+		fi
+
+	else
+		echo "DEBUG: ERROR - password var is empty.."
+		$VLIBFNC F_ERR "ERROR - Password var is empty"
+	fi
+	echo "DEBUG: Hashed pass is: $HASHPW"
+}
+export -f F_ENC
+
+# we decrypt the hashed pw here again for further use
+F_DEC()
+{
+        if [ ! -z "$HASHPW" ];then
+		echo HASH is $HASHPW
+                DPASS=$(echo "$HASHPW" | $XOPENSSL enc -aes-256-cbc -d -a -salt -pass pass:${SALTPW})
+                if  [ -z "$DPASS" ];then
+                        echo "DEBUG: ERROR - while decrypting hashed password.."
+                        $VLIBFNC F_ERR "ERROR while decrypting hashed password"
+                fi
+        else
+                echo "DEBUG: ERROR - hashed password var is empty.."
+        fi
+} 
+
+# print special ovftool errors
+F_OVFERR(){
+	TMSG="$1"
+	F_MSG "$TMSG\n\nYou NEED to solve this in order to use vEMan.\nOn the next screen the README will show you details on how to fix that."
+	$YAD --image-on-top --window-icon="$LOGO" --title="$TITLE ($TMSG)" --width=1000 --height=800 \
+             --center --wrap --text-info \
+             --button="Abort" \
+             --always-print-result < README
+	F_EXIT
+}
+
+# never change this, otherwise the whole script will stop working :o)
+# gruen is the german word for green. This is a personal running gag of mine and so i thought
+# it could be a good idea to implement that ;o)
+while [ "$1" ];do
+	if [ "$1" == 'gruen' ];then
+		EPARA="$2"
+		shift	
+	else
+		if [ "$2" == "gruen" ];then
+			EPARA="$1"
+		else
+			case "$1" in
+				--version|-V)
+					F_VERSION
+					exit 0
+				;;
+				-h|--help|help)
+					F_HELP
+					exit 0
+				;;
+				-rate|-R)
+					F_REVIEWER
+					exit 0
+				;;
+				*)
+					FASTARG="$1"
+					break
+				;;
+				esac
+		fi
+	fi
+
+   case "$EPARA" in
+	-v)
+		echo
+		echo
+		echo "You are a tough guy/girl..."
+		echo
+		echo
+		exit 0
+	;;
+	-vv)
+		echo
+		echo
+		echo "Hey stop bothering me..."
+		echo
+		echo
+		exit 0
+	;;
+	-vvv)
+		echo
+		echo
+		echo "Ok it seems you're searching for something right?"
+		read -p "so.. if - I mean I-F I will give an easteregg, will you then stop? [y/N]" AEGG
+		case "$AEGG" in
+			y|Y)
+			echo "Ok I trust you. So prepare yourself for something you may never seen before.."
+			sleep 2s
+			echo "Something which will take your breath away.."
+			sleep 2s
+			echo "... a new area of eastereggs beginn.."
+			sleep 2s
+			read -p "so... ready for that? I mean REALLY ready? [y/N]" AEGG2
+			[ -z "$AEGG2" ] && AEGG2=N
+			case "$AEGG2" in
+				y|Y)
+				echo "ok so you have been warned:"
+				cat << EOFEGG
+BB###M@@HHBHABBB#@@@@@@##@#@@@@@@@#@@@#@@@@@@##@@#####@@@@@@@@#####@@@@@@@#######@@#MMBHBBHA@@HHMMBMB
+HHMHABA@@A#@#HM@@@M#M###BHBHBMBHHB#@@#MMMBBMHAHAAAAB#@###BHAM@@@@#####BHHMMBM@@#MB#@@##MBMMMBMHHHBBBM
+MHMBMMHH#BB@@@@@MG2X22992XGABBhGAG255552Xh3999X2229M@&22223hH@BH&XX3X3GMH39&@@A2XB@A#@@#HBM@#AMBBMBMM
+MHBMMMBHAM#@@#&3X3X29hhXhHHB@#AHA9AAHMB&hh99HG2iA#5i#@AA#@@#H22h&AAGhAHHAA&h933329@@X&#@@#B##BBMM#@MB
+MHMBMMB##@@#G229B3GGGh&M@9siissr5iX5;:;;r;,:;;:;r@@.......:;sisr;;ri5irr.;;rAHAGX29@A5M#@@@@@#HBMB##M
+@#HH#@@@@#92X33X&39&&&hi:..,: :A,;..25;:.,,,,, .@@@@@@@@@@@@@@@@@@:,,:,:.is::r9HA92hM&H@&hB@@@#BBBB#M
+#@H#@@@#hX2X#@GX9M@AS;:,;M:.;,rX,.:,#i:;:,,,,,,,@@--...@@@3;:Sr;rSX;:;r;;G@3,i.:iGH39&993X2h#@@##MBMM
+MA#@@H3XX9#9G#GA&&2;:,;:r@Gs:;r::;::,@@MH....@@, SS . @@@9;XsrA;9i,;;;r:,.iX.5@s,:rX9h9X3G32XB@@@#MM#
+MM@#h2XGh2BAX9AHGs.;;:;:.;sS::;;;;;5;i#@....;@@,    r@@@@@@@@G.:::;;:;;:.:,::2@B 5ArrSH&h&GGXXM##@@B#
+MB##@BGhhhhAAhiSiX::;;::,:::r,:;r::S:;A#@#,,h@2 :2.,@@@@3,,. ,:,:;r;;r;;;..,:i@@,:@r,rA@G93GhXG@###H#
+BAB#@@A33hhAAGS,,,::;rsr:;i:;r:;:s;:;:;M@h;&@2.,;,;@@@s:. ,r@A:r2rrrr;;;:HB.:,,@M :;,#@h&2X&3A@@MHMMM
+HBBBM@@@MG9GGGH5;:;;;:;H;;r;:r:r;;;r;r,r@#MX;..:;2@@@@@@@@@@@S.:39;;;;:r;r@@;, rr:,;A#A9GX2B#@@#HBHMB
+MHB#MM@@@MXX9hH#MG;rs;,r:;:::rr:;,:r..:;5s. ,,;rsX2irr;rsir:,,r,,;::rr;:;:S@s;,,;;r#B&X@M2A@@@MBM##HB
+MHH#MA##@@#9X3GH##Gs;s;,,;r;;s::rriSss#@,.:;;3@@M,  .:r:.  :;,;s:,:;,;rr:;,;::;;;i##AAX@AM@@MHBHBM#MB
+M#MHHHHAB@@@#H33AAHB2is:,;;:sX,s@@@@@@@i r;;@@@@:,G5rh;,.,,;i:,i5,s;,,;5:,;;r::;H@HG&3&@@@@HMHHMHHBBB
+HB##HBHAAB#@@@#3XGGAH@@@@::,rr;M@@@@@@@#..:H@@@;@@@5:,;5X;,:@@#....@@@...,;5,AHG#AGXXH@@@BHHM#HHBBHBM
+BHHMMHBMBABM#@@@G3GH@H&@@,.:::S@@G;59#@#.;h@@@r.M;.2#@@@@@:: @@@...@l.......X@@HG3A9H@@#AA@MH@@HB##BB
+BHBHHBHB@#HMH#@@@#93@@2XhG;,;;:9& .2M#@#B@MH@@ .  9@M..@@i;;2@@@@.@M;:,.....@#X93hG#@@MBBH@MHB@MHH#BB
+MHMMAHBHB#AHHH#@@@#5i@@Xh@@S:r.,;,9M:h@@@i3@@; ,,3@@..@@Ai::M@.M@@@@,;,,,,A@AS33AG#@#HBBBM@@HA##HMBMB
+MMB#BBBB&M#AHHHB#@@@2S#AhGB&,;MSs3@2 @@@; H@sir.r@@@.@@@#r.,@@..@@3@r..,;H#X2G&&@@@MHBBHBBH@#AHBHMMBH
+HB#MH#MH#H@#BHHHAH@@@BG3X3AMH3##@@95;2@h :#@H#r;:#@#@@h5@@;:@@.. h@@r;;5##A99H#@@@HABBMHHBGB#ABBBBBB#
+HA#BHBMMMA#M#BBMAA##@@@G523HAH9&2s, : :....;, .:  ;.......i@3.   .;,S2AMAGX2A@@@#AB#HHBMAM#&#@HHHMHM@
+BHBMHBHMM#BBAHAMHAAHB@@@MXXAA3hSr. .,  ;..,  ;..;   .,.. .B@2 AM . 9@@h3X22M@@#MBH#@BHA#@B@#A##HBMMHM
+MMHBHHHAH#HM#BBMHBHAM##@@#933XXGA@X,,:::..;.:@; @s . ,,,.. :#@@hs.X@MXXX5G#@@#AHBBAMA##HMB@@@HBHBMBH#
+#BAHHBBHHAHAMMB#HHHAM#AA#@@HHh2h&#Mr,;;:;:;. G3 :r....::, . r@ ;@S@XS222A@@#MAAAAHHB#B@@B&H@@@AHBBBHB
+HBBBHHBHMHHBHBHMHAAHHAAAA#@@@A355539&i:.,;,...: ;.......,.;r  :@@2SH2S&B@@MAAA##HBBHHA#@#&GH@#ABBHBBB
+HBMB#MHHHB#BBHHA#HAAHAABBAB###AH5iXX9As. :. ,,. ., :r.:. ,:,sr@@s2&hsA@@@HHAAAM@@HBHAA&@#AHAAHBMMBMMB
+BBHAM@@HAAMMAAMMB@HAB#HA#@#A##M@@9ssSX2;,., ,5.  ,  2.,::. ;@@Grr23r#@#@GhHHABHHMAHMBAAAMHH#BAHMMHMBH
+MBHB&@@BBAABMHABAM@HAMMHh@@3#@#M@@srs5isH; , .; ..  .  ..:r#3:rr;rs#@#AHAAAHAABAABHH@#HBMMMB#BHHBBBBM
+BBAHHHHHBMBBMBBMHA@@MGAAAGHhG@@H#@@A;sr2@@h    S,  :,.. ,#@9,;rrriB@HAhAMAAABHAAHBMHM@#A#HB#HB#MABBM#
+M##AB#HHAB#HBHAHMMA#MAAABM&hh39X@@@@2r;i#X@@;      r,. ,@#S::;;AHGH99hhAAAAAB@@HBHHHAHMAHHH#BAMBBBAAB
+BBBAHBAHMAB#BMBABB&AAAHA&BBh&&3X99GMAXr:::,AAr;   .  .rM;,:::;X#MAh23&hGHHAAA##M@AHH#HH#BBHH#MAHA##AM
+BHH#HBBAMBAMMA#HAA&AA&AAAAA&GGh3h523GA92:,,:;r:@H   :5i:.;:,r3Hh933BhhAhAHHAG&AAMHHAMBAH@#HA@@HAMM@MM
+BAHMHM##BBHABAHH&BM#HBAHHHGhAA&A&X233AHHX;,;::,i2  ;s:rr,;:i@#222h2A#AAA&AAM#MAAAMMAABAHMMABA@@AM@@@B
+HHHHHAHHBHHBB@#HAAB@@@GhA&#M&GAA&&&X23Gh&3r;;;i,:H&r;:r:;;i@B3X3@@HihAAAAAAA##HHAAMHHHHHBAAHHHMHHM@@H
+BMABMBHHBAAHM@@@AHA&@@@A&GB@AHh33XhGX2XhG&5sss@@;G@,:::,;A@5SS22@@@#33&&HAAAAABMHAHBMHABBABBHHHAHAH#H
+BBBABBHBBAAA&M@@hAMAGB@@A&&#hAG3992X2i2X9X9#@i::: X5s::2@@hSS5SSiHB@AhhGAAABAAABABHH##BHAHHHHHBHHHAHB
+BHHBBHAHHBAAMA#@HGAMGhAM&&&&MA9GhM353H25X553#@r99:,iS;r@AiS552X233XX&&AA&AAHABAAHHBHH#B@@ABBHABMBHHHB
+@@AAAHAHAM#AHB&#@@GAAG&AA&GGH@H3&@@&2Mhi225SiBAr59rr52A95G2S32X939GhhGHA&#@&AA##HHAHBAAB@BABMMHHBAHBB
+H@@GABMMAB@MAAA9@@#GHAAHHBh&h#@X3A@M22352S2iS3@@XSX3hGX3ShBXX9h3XXGAGGAAAA#AA&M#ABBABBAAA#MABMBHA#MMH
+AB@@AAM#HAHHHAHHh@MMAAA@@AA&GG#GXhBh5X3hX2SSii2AMBA&h53#XsBMXAGAH93&HA&&AAAHHH#MAAAHABAHHHMHAB#MAM@BH
+
+If you don't know what this is then you may not prepared enough for using vEMan...
+(or you may have to change your resolution and/or screen size)
+
+EOFEGG
+				exit 0
+				;;
+				*)
+				echo
+				echo
+				echo "Ok stopping this is a good choice.. Goodbye and never try that again!"	
+				echo
+				echo
+				exit 0
+				;;
+			esac
+			;;
+			n|N)
+				echo
+				echo
+				echo "Well you're at least honest.. but in that case you may never be a happy person.."
+				echo
+				echo
+                                exit 0
+			;;
+		esac
+		;;
+		-vvvv)
+			echo
+			echo
+			echo "*sigh* .. it happens again. You told me to stop but you don't.."
+			echo "Well.. if you are not impressed yet, I don't know what else I can do for you.."
+			echo
+			echo
+			exit 0
+		;;
+		-vvvvv)
+			echo
+			echo " I believe you're still searching for something and to be honest I can"
+			echo " give you the answer for all your questions. It is:"
+			echo 
+			echo " 				42"
+			echo 
+			echo " (Hint: All credits for this answer goes to:"
+			echo " Per Anhalter durch die Galaxis / The Hitchhiker’s Guide to the Galaxy)"
+			echo
+			exit 0
+		;;
+		*)
+			echo
+			echo
+			echo "Wow everything will be GREEN now.. (if not --> do NOT open a case)"
+			echo
+			echo
+			exit 0
+		;;
+   esac
+done
+
+# precheck required files and settings
+SAVEIFS=$IFS && IFS=$','
+
+for REQ in $(echo "$ALLBINS");do
+	if [ -x "$REQ" ];then
+		echo "DEBUG: Requirement $REQ met."
+	else
+		echo "DEBUG: Error requirement $REQ is not available or executable!"
+		IFS="$SAVEIFS"
+		MSG="ERROR: Requirement $REQ is not available or executable!\nPlease check README for requirements."
+		$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button ABORT
+		F_EXIT
+	fi
+done
+IFS="$SAVEIFS"
+
+# checking for non-working OVF-tool
+if [ ! -x "$XOVFTOOL" ];then
+    echo "DEBUG: ovftool not installed!"
+    $YAD --window-icon="$LOGO" --width=800 --height=500 --text-info --text \
+       "ERROR: The ovftool:\n${XOVFTOOL}\n\ncannot be found.\n\nPlease download ovftool v2.0.1 (do NOT use v2.1.0 because its buggy):\n" \
+       --list --editable --column "You could try this Download-Link (VMware login required)" "https://my.vmware.com/group/vmware/get-download?downloadGroup=OVF-TOOL-2-0-1"
+    F_EXIT
+fi
+
+
+# check for good and bad ovftool versions. this is also needed later because of different arguments between ovftool versions
+OVFVERS=$("$XOVFTOOL" -v |cut -d " " -f3)
+case "$OVFVERS" in
+	2.0.1) # best tested version
+	     echo "DEBUG: congrats you use the best known ovftool version"
+	;;
+	2.1.0) # buggy version
+	     TMSG="Buggy ovftool version"
+	     F_OVFERR "$TMSG"
+	;;
+	3.0.1) # untested version
+	     echo "DEBUG: ovftool v3 is untested.."
+	;;
+	*) # unknown version or not installed
+	     TMSG="Unknown ovftool version"
+	     F_OVFERR "$TMSG"
+	;;
+esac
+
+# Detect if we have ever been executed or not and start the initial installer if not
+if [ ! -f "$FRESHINST" ]||[ "$1" == "--init" ]||[ ! -f "$LICSTAT" ];then
+	echo "DEBUG: vEMan executed first time. Starting installer.."
+	F_LICENSE
+	F_REVIEWER
+	F_INSTALLER
+else
+	#check if rating was done or not
+	if [ ! -f "$REVFILE" ];then
+		echo "DEBUG: vEMan wasn't rated before so displaying popup"
+		F_REVIEWER
+	fi
+	echo "DEBUG: vEMan has been executed before. Skipping installer."
+fi	
+
+
+# Ensure that the session data is valid before we begin! 
+	echo "DEBUG: starting auth popup"
+	F_AUTH
+	if [ ! -z "$FASTARG" ];then
+		$VLIBFNC "$FASTARG"
+	else
+		echo "DEBUG: opening action $ACTION"
+		echo 80 >> $PREPRG
+		if [ "$ACTION" == "Deploy_VMX" ];then
+			echo 100 >> $PREPRG
+			$VLIBFNC F_ACTIONS
+		fi
+	fi
+	FIRSTACT="$?"
+	echo "DEBUG: FIRSTACT was $FIRSTACT"
+	echo 100 >> $PREPRG
+
+# Come back to vEMan until the user abort manually
+
+	if [ "$FIRSTACT" -eq 0 ];then
+		$VLIBFNC F_MAINLOOP
+	fi
+
+
+# well exit vEMan if no other exit call was done before this one
+echo "DEBUG: Last exit before Texas.." 
+F_EXIT
+

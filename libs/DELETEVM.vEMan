@@ -1,0 +1,67 @@
+# Delete a VM on the host
+F_DELETEVM()
+{
+	F_GETCFG
+	unset DELANS DELERR
+        if [ -z "$TARGETVM" ];then
+                echo " DEBUG: ERROR: No VM host selected?"
+                MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                F_ESXMGR
+        fi
+
+        while [ -z "$DELANS" ];do
+                DELANS=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Delete VM)" --width=400 --form \
+			--text "Double-Check if that is the VM you want to delete!" \
+                        --field=:LBL\
+                        --field="Selected system":RO \
+			--button="DELETE above VM!":77 \
+			--button="Oh no.. Go back":1 \
+			--always-print-result \
+			false \
+			"$TARGETVM" ) 
+		DELERR=$?
+
+		echo "DEBUG: selected VM was $TARGETVM, answer was $DELERR"	
+                # if user aborts or clicking on Go back button we set the DELANS manually
+                # (we could also use break here but .. well there are so many ways..
+                if [ "$DELERR" -eq 252 ]||[ "$DELERR" -eq 222 ];then
+                        DELANS=1
+                fi
+        done
+
+	# user has verified the VM and wants to delete it really..
+	if [ "$DELERR" -eq 77 ];then
+		if [ -z "$AUTHSESS" ]||[ -z "$SRV" ];then
+			echo "DEBUG: Error missing target info and/or creds.."
+			MSG="Error missing target info and/or creds\nCannot proceed!"
+			$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Close"
+		else
+			# ensure that the VM is in proper state
+			all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XVMINFO --sessionfile $AUTHSESS --server $SRV --powerstatus poweredOff --fields vmname |grep "Name:" | sed -e 's/[ \t]//g;s/Name://g' |grep -i "$TARGETVM"
+			if [ $? -eq 0 ];then
+				echo -e "y\n" | https_proxy="" $XVMDEL --sessionfile $AUTHSESS --server "$SRV" --vmname "$TARGETVM" \
+					| $YAD --window-icon="$LOGO" --title="$TITLE (Destroy VM)" --center --height=400 --width=500 --list --column "Please be patient, the result will appear in a few seconds:" --button=Close
+				if [ $? -eq 0 ];then
+					echo "DEBUG: Deletion of >$TARGETVM< ended successfully."
+					# enforce a refreshness of online/offline VMs
+					rm -vf $TMPonlinevms
+					MSG=" Deletion of \n\n $TARGETVM \n\n ended successfully. "
+#					$YAD --window-icon="$LOGO" --title="$TITLE (Destroyed a VM)" --on-top --center --width=400 --text "$MSG" --button="Close"
+				else
+					echo "DEBUG: ERROR while trying to delete VM: $TARGETVM!"
+					MSG="ERROR while trying to delete VM: $TARGETVM!"
+					$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Close"
+				fi
+			else
+				echo "DEBUG: Error, your VM seems to be not in proper state or was renamed?!"
+				MSG=" Your VM is either not in proper power state (powered off) \n or it cannot be detected for deletion. " 
+				$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Close"
+			fi
+		fi
+	fi	
+
+        echo "DEBUG: Closing VM deletion manager"
+}
+
+export -f F_DELETEVM

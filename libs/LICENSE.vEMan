@@ -1,0 +1,76 @@
+# Display the vEMan license
+F_LICENSE(){
+	echo "DEBUG: Displaying license information"
+
+        unset LSELECT LANS
+
+        while [ -z "$LANS" ];do
+                LSELECT=$($YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (License)" --width=750 --height=300 \
+                                --center --text \
+"\n<u>THIS IS A <b>HUMAN READABLE LICENSE SUMMARY</b>!\n\nTO READ THE FULL LICENSE CLICK ON THE BUTTON AT THE BOTTOM</u>\n
+<b>You are free:</b> \n
+    to <i>Share</i> - to copy, distribute and transmit the work \n
+    to make <i>commercial use</i> of the work \n
+<b>Under the following conditions:</b>\n
+    <i>Attribution</i> - You must attribute the work in the manner specified by the author or licensor\n
+    \(but not in any way that suggests that they endorse you or your use of the work\).\n
+    <i>No Derivative</i> Works — You may not alter, transform, or build upon this work.\n
+<b>With the understanding that:</b>\n
+    <i>Waiver</i> - Any of the above conditions can be waived if you get permission from the copyright holder.\n
+    <i>Public Domain</i> - Where the work or any of its elements is in the public domain under applicable law,\n
+    that status is in no way affected by the license.\n
+    <i>Other Rights</i> - In no way are any of the following rights affected by the license:\n
+        Your fair dealing or fair use rights, or other applicable copyright exceptions and limitations;\n
+        The author's moral rights;\n
+        Rights other persons may have either in the work itself or in how the work is used, such as\n
+       publicity or privacy rights.\n
+    <i>Notice</i> - For any reuse or distribution, you must <b>make clear to others the license terms</b> of this work.\n
+    The best way to do this is with a link to the projects homepage." \
+                                --button="Read full license":30 \
+                                --button="Accept":33 \
+                                --button="Decline":34 \
+                                --always-print-result)
+                LANS=$?
+
+                echo "DEBUG: selected button id: $LANS"
+
+                [ "$LANS" -eq 252 ]&& echo aborted by user && F_EXIT
+
+        done
+
+        echo DEBUG: Answer was $LANS
+	
+	if [ "$LANS" -eq 30 ];then
+		$YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (License)" --width=1000 --height=800 \
+                                --center --wrap --text-info \
+				"$LICSUM" \
+                                --button="Accept":33 \
+                                --button="Decline":34 \
+                                --always-print-result < LICENSE_FULL
+		LANS=$?
+		echo "DEBUG: selected answer in FULL license mode was: $LANS"
+	fi
+
+        case "$LANS" in
+                33)
+		echo "DEBUG: License accepted.."
+                > $LICSTAT
+                ;;
+                0|1|34)
+		echo "DEBUG: You have declined the license. That's your free choice but without the acceptance of this license"
+		echo "DEBUG: you cannot use vEMan.."
+                [ -f $LICSTAT ] && rm -vf $LICSTAT
+
+		MSG=" You have declined the license.\n That's your free choice but without the acceptance of this license\n you cannot use vEMan.."
+        	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Close:0
+		exit
+
+                ;;
+                *)
+                echo "F_ESXMGR ERROR: Unspecified action ($LANS) defined"
+                F_ERR "Unspecified action ($LANS) defined (F_LICENSE)"
+                ;;
+        esac
+
+}
+

@@ -1,0 +1,55 @@
+# Try to detect if VNC console is enabled or not
+F_DETECTVNC()
+{
+	F_GETCFG
+        DETONLY="x$2"
+        SAVEIFS="$IFS" && IFS=$(echo -en "\n\b")
+        unset DETPORT VNCSTATE VNCPORT
+        if [ ! -z "$1" ];then
+                TARGETVM="$1"
+                F_GETVMPATH
+                echo "DEBUG: Using specific VM $1 for detection"
+                VNCSTATE=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV "$FULLVMPATH" getguestinfo RemoteDisplay.vnc.enabled | grep RemoteDisplay.vnc.enabled |cut -d"=" -f 2 |tr -d " ")
+                if [ ! -z "$VNCSTATE" ];then
+                        echo "DEBUG: VNCSTATE is: $VNCSTATE"
+                        if [ "$VNCSTATE" == "false" ];then
+                                echo "DEBUG: VNC is not enabled ($VNCSTATE)."
+                                unset DETPORT VNCSTATE VNCPORT
+                        else
+                                if [ "$VNCSTATE" == "true" ]||[ "$VNCSTATE" == "1" ];then
+                                        echo "DEBUG: VNC is already enabled. Checking for defined port."
+                                        DETPORT=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV "$FULLVMPATH" getguestinfo RemoteDisplay.vnc.port | grep RemoteDisplay.vnc.port |cut -d"=" -f 2 |tr -d " ")
+                                else
+                                        echo "DEBUG: unusual feedback from Vmware.."
+                                fi
+                        fi
+                else
+                        VNCSTATE=disabled
+                fi
+        else
+                echo "ERROR: Missing arg (server name missing)"
+                F_ERR "Missing server name (F_DETECTVNC)"
+        fi
+        IFS="$SAVEIFS"
+        # added an exit if we want to detect only and nothing more.
+        if [ "$DETONLY" == "xdetectonly" ];then
+                echo "DEBUG: detectonly."
+        else
+                if [ -z "$DETPORT" ]||[ "$VNCSTATE" == "disabled"];then
+                        echo "No VNC port found or VNC isn't active atm."
+                        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "Console seems to be NOT enabled..!\nDo you want to enable the console for this host?" --image dialog-error --button "Enable console":0  --button=Cancel
+                        if [ $? -eq 0 ];then
+                                echo 100 >> $PRGRSFILE
+                                F_ENABLEVNC
+                        else
+                                echo 100 >> $PRGRSFILE
+                                F_ESXMGR
+                        fi
+                else
+                        VNCPORT=$DETPORT
+                        echo "VNC port is: $VNCPORT"
+                fi
+        fi
+}
+
+export -f F_DETECTVNC

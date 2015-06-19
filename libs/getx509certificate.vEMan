@@ -1,0 +1,70 @@
+#!/bin/bash
+##################################################################################################################
+#
+# 
+# Copyright by Thomas Fischer <thomas@nethna.de>
+# Original source available at: http://vEMAn.nethna.de
+#
+# vEMan by Thomas Fischer is licensed under a Creative Commons Attribution-NoDerivs 3.0 Unported License.
+# ------------------------------------------------------------------ #
+# You are free:
+#    to Share — to copy, distribute and transmit the work
+#    to make commercial use of the work 
+# Under the following conditions:
+#    Attribution — You must attribute the work in the manner specified by the author or licensor 
+#                  (but not in any way that suggests that they endorse you or your use of the work).
+#    No Derivative Works — You may not alter, transform, or build upon this work. 
+# With the understanding that:
+#    Waiver — Any of the above conditions can be waived if you get permission from the copyright holder.
+#    Public Domain — Where the work or any of its elements is in the public domain under applicable law, 
+#                    that status is in no way affected by the license.
+#    Other Rights — In no way are any of the following rights affected by the license:
+#        Your fair dealing or fair use rights, or other applicable copyright exceptions and limitations;
+#        The author's moral rights;
+#        Rights other persons may have either in the work itself or in how the work is used, such as 
+#       publicity or privacy rights.
+#    Notice — For any reuse or distribution, you must make clear to others the license terms of this work. 
+#             The best way to do this is with a link to this web page.
+# ------------------------------------------------------------------ #
+# Read the full license at: http://creativecommons.org/licenses/by-nd/3.0/
+#
+# First version created on January 2012
+#
+#
+#
+#################################################################################################################
+#
+# NORMAL USAGE: start vEMan instead of this one.
+#
+##################################################################################################################
+
+if [ -z "$1" ] || [ -z "$2" ] 
+then
+	echo "Insufficient number of args"
+	echo "$0 <ESX_ip_address> <output_file>"
+	exit
+fi
+echo Connecting to $1 port 443
+openssl s_client -connect $1:443 < /dev/null 1>out.txt 2>err.txt
+if [ "$?" -ne "0" ] 
+then
+	cat err.txt
+	exit
+fi
+echo -n Generating Certificate
+grep -in "\-----.*CERTIFICATE-----"  out.txt | cut -f 1 -d ":" 1> out1.txt
+let start_line=`head -n 1 out1.txt`
+let end_line=`tail -n 1 out1.txt`
+if [ -z "$start_line" ]
+then
+	echo "error"
+	exit
+fi
+let nof_lines=$end_line-$start_line+1
+#echo "from $start_line to $end_line total lines $nof_lines"
+echo -n " .... "
+head -n $end_line out.txt | tail -n $nof_lines 1> out1.txt
+openssl x509 -in out1.txt -outform der -out $2 
+echo done.
+rm out.txt out1.txt err.txt
+

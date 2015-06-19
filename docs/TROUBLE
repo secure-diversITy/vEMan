@@ -1,0 +1,98 @@
+####################################################################################
+#  NAME:    TROUBLE
+#  PLACE:   docs/
+#  DESC:    Troubleshooting guide and hints
+####################################################################################
+
+Good to know:
+
+    You can start vEMan from the commandline! There are several
+    options available, simply check:
+    
+    $> ./vEMan --help
+
+    For the most problems I recommend to start vEMan from the commandline which
+    may help in many cases to find out the root problem of your issue.
+
+   There is a vEMan compendium available in ./docs/ - check it out!
+
+Get Support:
+
+    Go to the vEMan support forum for -community(!) based- help:
+    (FREE registration NEEDED!)
+      1. Login to sourceforge 
+         (or create a FREE account if you haven't one yet here: 
+          https://sourceforge.net/user/registration )
+      2. Go to vEMan Community Support site ( https://sourceforge.net/p/veman/discussion/ )
+      3. Click on the "Create Topic" button in the left menu
+      4. Select "vEMan Support Forum" in the drop down(!) list
+      5. Post your question(s) and the following important information:
+         - Version of VMware SDK Toolkit
+           ( vmware-cmd --version)
+         - Version of YAD
+           ( yad --version )
+         - Version of ESX (exact build)
+ 
+    Enterprise Support is also available at info@secure-diversity.de
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Self-Healing section
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A) vEMan doesn't start!
+
+    If vEMan cannot be started ensure you have the correct permissions:
+
+    $> cd [INSTALL-DIR]/vEMan_vXXX/
+    $> chmod -R +x vEMan ./libs/ ./vmapps/
+
+    You should then start vEMan from the commandline by:
+    
+    $> ./vEMan
+    
+    and take a briefly look on the output vEMan gives.
+
+B) Problem XYZ occurs!
+
+    Start vEMan from the commandline, check output and
+    
+    check the log file which is created within your home dir:
+
+    $> cat ~/.vEMan/vEMan.log
+
+C) vEMan works fine but I cannot open the Console of a VM:
+
+   If you have an ESX v5 or higher the ESX firewall may be enabled and therefore blocks
+   connections.
+   Check the guide in docs/README_ESX5.1
+   
+   If you have a firewall between you and the target ESX you need to ensure that the port
+   range 5900-5999 is open from you to your ESX. Well you may need all of those ports that
+   depends on the count of your VMs you want to manage on the target ESX. The port can be
+   changed within the VM Editor of vEMan. Check the vEMan compendium for details. 
+
+   You can also Re-enforce the console activation by enable the console in the VM Editor again
+   More details in the vEMan compendium.
+
+D) D1) Where is my vEMan start icon? 
+   D2) I want to re-install vEMan!
+
+    If you cannot find your Desktop icon of vEMan it should also be a copy within your vEMan directory.
+    If not or if you want to re-init the installation (reinstall) you can do so by:
+        $> [INSTALL-DIR]/vEMan --init
+
+E) vEMan does not work after an upgrade!
+
+    When that happens I hope you have read the corresponding UPGRADE guide? If you have followed the
+    guide you will have your old version in place so you can still use the working one to keep
+    productive. Ok so the most reasons for upgrade issues are that there were changes within the
+    config files of vEMan or you haven't followed the UPGRADE guide correctly.
+    
+    1. Read and follow the UPGRADE guide step-by-step!
+    2. start vEMan from the commmandline.
+    3. Check Output and Log (see A+C).
+
+F) My problem is not listed here
+
+   Go to the above "Get Support" section and follow the guide to open a support request
+    

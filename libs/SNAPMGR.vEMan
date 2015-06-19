@@ -1,0 +1,195 @@
+#Manage snapshots (view, take, remove, revert to,..)
+F_SNAPMGR()
+{
+        F_GETCFG
+        echo 100 >> $PRGRSFILE.SNAP
+        echo 0 > $PRGRSFILE.SNAP
+        tail -f $PRGRSFILE.SNAP | $YAD --window-icon="$LOGO" --center --on-top --title="$TITLE (Snapshot Manager)" --width=350 --progress --progress-text="collecting data..." --auto-kill --auto-close &
+
+        if [ -z "$TARGETVM" ];then
+                echo " DEBUG: ERROR: No VM host selected?"
+                MSG="ERROR: You haven't selected a target VM. Please try again\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                F_ESXMGR
+        else
+                echo 20 >> $PRGRSFILE.SNAP
+                unset SNAPANS HASSNAP RETSNP NAMESNAP SELSNAP
+                F_GETVMPATH             
+                HASSNAP=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS --server $SRV $FULLVMPATH hassnapshot |tr -d " " |cut -d "=" -f2)
+                echo 60 >> $PRGRSFILE.SNAP
+
+                case "$HASSNAP" in
+                        0)
+                        echo "DEBUG: No snapshots available."
+                        RETRSNAPS=0
+                        ;;
+                        1)
+                        echo "DEBUG: Snapshots available."
+                        RETRSNAPS=1
+                        ;;
+                        *)
+                        echo "DEBUG: Error in retrieving info about snapshots on VM $TARGETVM!"
+                        SNAPANS=90
+                        RETSNP=$SNAPANS
+                        RETRSNAPS=$SNAPANS
+                esac
+
+                echo 80 >> $PRGRSFILE.SNAP
+                while [ -z "$SNAPANS" ];do
+                        [ "$RETSNP" == "90" ]||[ "$RETSNP" == "252" ]||[ "$RETSNP" == 10 ] && break
+                        SNAPANS=$(https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation list --vmname "$TARGETVM" \
+                                        | sed -n '/Name/,$p' | grep -vi Quiesced \
+                                        | tee >(sleep 4s && echo 100 >> $PRGRSFILE.SNAP) \
+                                        | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 600 --width 600 --list --column "Detected Snapshots" \
+                                        --button="Create":10 \
+                                        --button="Revert to":11 \
+                                        --button="Remove":12 \
+                                        --button="Rename":13 \
+                                        )
+                        RETSNP=$?
+                        if [ "$RETSNP" == 252 ]||[ "$RETSNP" == "90" ];then
+                                echo "DEBUG: Closing SNAMPMGR ($RETSNP).."       
+                                SNAPANS=$RETSNP
+                        else
+                                echo "DEBUG: Returning to VM info screen ($?)"
+                        fi
+                done
+                
+                if [ -z $RETSNP ]||[ -z $TARGETVM ];then
+                        echo "DEBUG: Error the action ($RETSNP) or VM ($TARGETVM) cannot be determined!"
+                else
+                        case "$RETSNP" in
+                                10)
+                                echo "DEBUG: creating snapshot"
+                                unset NAMESNAP RETCRT
+                                while [ -z "$NAMESNAP" ];do
+                                [ "$RETCRT" == "90" ]||[ "$RETCRT" == "252" ]&& break
+                                        NAMESNAP=$($YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
+                                                --field="Selected VM":RO "$TARGETVM" \
+                                                --field="Snapshot name" \
+                                                --button=Abort:90 \
+                                                --button="Create Snapshot":0)
+                                        RETCRT=$?
+                                        if [ "$RETCRT" == 252 ]||[ "$RETCRT" == "90" ];then
+                                                echo "DEBUG: Closin SNAMPMGR ($RETCRT).."       
+                                                NAMESNAP=$RETCRT
+                                        else
+                                                echo "DEBUG: RETCRT ok ($?)"
+                                                CONVSNAP=$(echo "$NAMESNAP"| cut -d "|" -f2 |tr " " "_" )
+                                                if [ -z $CONVSNAP ];then
+                                                        echo "DEBUG: ERROR - converting snapshot name failed ($NAMESNAP,$CONVSNAP)"
+                                                else
+                                                        https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation create --vmname "$TARGETVM" --snapshotname "$CONVSNAP" \
+                                                        | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
+                                                                --text "The result will be displayed here in a few seconds..." \
+                                                                --list --column Result \
+                                                                --button=Close
+                                                fi
+                                        fi
+                                done
+
+                                ;;
+                                11)
+                                
+                                # the normal output of the snapshotmgr PL script is NAme,Date,State,Q. so we will replace the only fix var with a defined char to filter out the correct 
+                                # snapshot name
+                                SELSNAP=$(echo "$SNAPANS" |sed 's/[1-9][0-9][0-9][0-9]-[0-9][0-9]/|/g' |cut -d "|" -f1 |sed 's/ *$//g;s/^ *//g')
+
+                                echo "DEBUG: Reverting to snapshot $SELSNAP($SNAPANS)"
+                                if [ $RETRSNAPS -eq 0 ];then
+                                        echo "DEBUG: ERROR - this VM has no snapshots but you want to revert to one?!"
+                                else
+                                        if [ -z "$SELSNAP" ];then
+                                                echo "DEBUG: ERROR - snapshot var SELSNAP is empty (based on $SNAPANS)"
+                                        else
+                                                https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation goto --vmname "$TARGETVM" --snapshotname "$SELSNAP" \
+                                                        | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
+                                                                --text "The result will be displayed here in a few seconds..." \
+                                                                --list --column Result \
+                                                                --button=Close
+                                        fi
+                                fi
+                                ;;
+                                12)
+                                unset CHILDSNAP
+                                # the normal output of the snapshotmgr PL script is NAme,Date,State,Q. so we will replace the only fix var with a defined char to filter out the correct 
+                                # snapshot name
+                                SELSNAP=$(echo "$SNAPANS" |sed 's/[1-9][0-9][0-9][0-9]-[0-9][0-9]/|/g' |cut -d "|" -f1 |sed 's/ *$//g;s/^ *//g')
+                                echo "DEBUG: Removing snapshot $SELSNAP($SNAPANS)"
+                                if [ $RETRSNAPS -eq 0 ];then
+                                        echo "DEBUG: ERROR - this VM has no snapshots but you want to delete one?!"
+                                else
+                                        if [ -z "$SELSNAP" ];then
+                                                echo "DEBUG: ERROR - snapshot var SELSNAP is empty (based on $SNAPANS)"
+                                        else
+                                                $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 300 --always-print-result --text \
+                                                " It is possible to delete also all children of this snapshot\n (if childs exists for this snapshot).\n\n Do you want to delete this snapshot \n and all children of this snapshot?" \
+                                                        --button "This + all childs":1 \
+                                                        --button "Only this":0
+                                                CHILDSNAP=$?
+                                                case "$CHILDSNAP" in
+                                                        0|1)
+                                                        echo "DEBUG: valid answer defined ($CHILDSNAP)"
+                                                        https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation remove --vmname "$TARGETVM" --snapshotname "$SELSNAP" --children $CHILDSNAP \
+                                                                | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
+                                                                        --text "The result will be displayed here in a few seconds..." \
+                                                                        --list --column Result \
+                                                                        --button=Close
+                                                        ;;
+                                                        *)
+                                                                echo "DEBUG: invalid answer defined ($CHILDSNAP). Cannot proceed."
+                                                        ;;
+                                                esac
+
+                                        fi
+                                fi
+        
+                                ;;
+                                13)
+                                unset CONVSNAP RETREN NEWNAMESNAP
+                                # the normal output of the snapshotmgr PL script is NAme,Date,State,Q. so we will replace the only fix var with a defined char to filter out the correct 
+                                # snapshot name
+                                SELSNAP=$(echo "$SNAPANS" |sed 's/[1-9][0-9][0-9][0-9]-[0-9][0-9]/|/g' |cut -d "|" -f1 |sed 's/ *$//g;s/^ *//g')
+                                echo "DEBUG: Renaming snapshot $SELSNAP($SNAPANS)"
+                                if [ $RETRSNAPS -eq 0 ];then
+                                        echo "DEBUG: ERROR - this VM has no snapshots but you want to rename one?!"
+                                else
+                                        if [ -z "$SELSNAP" ];then
+                                                echo "DEBUG: ERROR - snapshot var SELSNAP is empty (based on $SNAPANS)"
+                                        else
+                                                NEWNAMESNAP=$($YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
+                                                        --field="Selected VM":RO "$TARGETVM" \
+                                                        --field="Current snapshot name":RO "$SELSNAP" \
+                                                        --field="New snapshot name" \
+                                                        --button=Abort:90 \
+                                                        --button="Rename Snapshot":0)
+                                                 RETREN=$?
+                                                if [ "$RETREN" == 252 ]||[ "$RETREN" == "90" ];then
+                                                        echo "DEBUG: Closin SNAMPMGR ($RETREN).."       
+                                                         NEWNAMESNAP=$RETREN
+                                                 else
+                                                        echo "DEBUG: RETREN ok ($?)"
+                                                        CONVSNAP=$(echo "$NEWNAMESNAP"| cut -d "|" -f3 |tr " " "_" )
+                                                        if [ -z "$CONVSNAP" ];then
+                                                                echo "DEBUG: ERROR - converting snapshot name failed ($NEWNAMESNAP,$CONVSNAP)"
+                                                        else
+                                                                https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation rename --vmname "$TARGETVM" --snapshotname "$SELSNAP" --newname "$CONVSNAP" \
+                                                                 | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
+                                                                        --text "The result will be displayed here in a few seconds..." \
+                                                                        --list --column Result \
+                                                                        --button=Close
+                                                        fi
+                                                fi
+                                        fi
+                                fi
+                                ;;
+                                *)
+                                echo "DEBUG: ERROR - Answer $RETINF is not valid"
+                                ;;
+                        esac
+                fi                      
+
+        fi
+}
+
+export -f F_SNAPMGR
