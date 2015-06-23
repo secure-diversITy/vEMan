@@ -111,7 +111,7 @@ F_VMEDITOR()
   VCPUS="numvcpus"
   VCPUSMAP="Number of CPUs"
 
-  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $RVNCPORT $VCPUS $RVNCSTATE)
+  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $RVNCPORT $RVNCSTATE)
   
   # order is important! new vars needs to be also parsed in "present changeable data" section!
   #ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus RemoteDisplay.vnc.enabled)
@@ -121,7 +121,7 @@ F_VMEDITOR()
   VMXARR=()
   for VMXVAL in $(echo ${ARRVMVARS[@]});do
     # parse XML and find matches
-    VMXVALG=$(grep $VMXVAL $LOCNEWVMX)
+    VMXVALG=$(grep -i $VMXVAL $LOCNEWVMX)
     if [ ! -z "$VMXVALG" ];then
         echo "DEBUG: VMX arg $VMXVALG detected."
     else
@@ -129,11 +129,11 @@ F_VMEDITOR()
         VMXVALG="$VMXVAL = \"UNKNOWN\""
     fi
     if [ ! -z "$VMXARR" ];then
-      #VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+      VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
       VMXARR=(${VMXARR[@]},$VMXVALG)
       echo "DEBUG: $VMXVALG added to array. Now: ${VMXARR[@]}"
     else
-      #VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+      VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
       VMXARR=($VMXVALG)
       echo "DEBUG: $VMXVALG added to a NEW array. Now: ${VMXARR[@]}"
     fi
@@ -148,7 +148,7 @@ F_VMEDITOR()
     echo "$TARGETVM" >$YADREST
     # special shit. the number of CPUs are not a required field in a VMX
     # so it could be that it is NOT set! But we still need to ensure we see valid data
-    echo "${VMXARR[@]}" |grep $VCPUS >/dev/null
+    echo "${VMXARR[@]}" |grep -i $VCPUS >/dev/null
     if [ $? -eq 0 ];then
       echo "DEBUG: numvcpus are set. ok."
     else
@@ -167,7 +167,7 @@ F_VMEDITOR()
     F_DETECTVNC "$TARGETVM" "detectonly"
     echo 90 >> $PRGRSFILE
     unset FMVNCPORT FMVNCSTATE
-    FMVNCPORT=$(grep "$RVNCPORT" $LOCNEWVMX)
+    FMVNCPORT=$(grep -i "$RVNCPORT" $LOCNEWVMX)
     if [ $? -eq 0 ];then
       FMVNCSTATE=TRUE
       FMVNCPORT=$(echo ${FMVNCPORT//*=/} | tr -d '"')
@@ -176,7 +176,7 @@ F_VMEDITOR()
     else
       FMVNCSTATE=FALSE
       RVNCSTATEMAP='Check to enable'
-      unset FMVNCPORT
+      FMVNCPORT='auto'
     fi
     echo $FMVNCSTATE >> $YADREST
 
@@ -197,9 +197,8 @@ F_VMEDITOR()
             --field="$RAMSIZEMAP" \
             --field="$DNAMEMAP" \
             --field="$ETH0NAMEMAP":CBE "$NETS"\
-            $FLVNCPORT \
             --field="$VCPUSMAP" \
-            --field="$RVNCSTATEMAP console:CHK" \
+            --field="$RVNCSTATEMAP console (Port: $FMVNCPORT):CHK" \
             --button="Activate changes":77 \
             --button="Cancel":1 \
             --rest="$YADREST" \
@@ -221,9 +220,8 @@ F_VMEDITOR()
         ARRNEWVMX=(memsize=\"$(echo "$EDITANS" | cut -d"|" -f2)\" \
                     displayName=\"$(echo "$EDITANS" | cut -d"|" -f3)\" \
                     ethernet0.networkName=\"$(echo "$EDITANS" | cut -d"|" -f4)\" \
-                    RemoteDisplay.vnc.port=\"$(echo "$EDITANS" | cut -d"|" -f5)\"\
-                    numvcpus=\"$(echo "$EDITANS" | cut -d"|" -f6)\"\
-                    RemoteDisplay.vnc.enabled=\"$(echo "$EDITANS" | cut -d"|" -f7)\"\
+                    numvcpus=\"$(echo "$EDITANS" | cut -d"|" -f5)\"\
+                    RemoteDisplay.vnc.enabled=\"$(echo "$EDITANS" | cut -d"|" -f6)\"\
                     )
     fi
   done
@@ -235,7 +233,8 @@ F_VMEDITOR()
   for USRANS in "${ARRNEWVMX[@]}";do
     SRCHSTR="${USRANS//=*/}"
     VALSTR=$(echo "${USRANS//*=/}"|tr -d '"')
-    grep "$SRCHSTR" $LOCNEWVMX > /dev/null
+    echo "DEBUG: processing $SRCHSTR..."
+    grep -i "$SRCHSTR" $LOCNEWVMX > /dev/null
     if [ $? -eq 0 ];then
       # special validations
       case "$SRCHSTR" in
@@ -243,6 +242,7 @@ F_VMEDITOR()
               echo "DEBUG: Reached number of CPU validation..."
               MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
               #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
+              echo "DEBUG: cpu count selected: $VALSTR. max cpu count: $MAXCPUNO"
               if [ "$VALSTR" -gt "$MAXCPUNO" ];then
                 F_MSG "Oops. Unfortunately the number of CPUs seems to be limited to \n         $MAXCPUNO cores.\nYour choice will be adapted accordingly for your convenience."
                 VALSTR="$MAXCPUNO"
@@ -258,6 +258,21 @@ F_VMEDITOR()
                 VALSTR="$MAXMEM"
               fi
               ;;
+        RemoteDisplay.vnc.enabled)
+              # this will only prepare the console handling not do anything. 
+              # enable/disable console will be done after uploading first.
+              echo "DEBUG: Reached VNC Console validation..."
+              if [ "$FMVNCSTATE" != "$VALSTR" ];then
+                  echo "DEBUG: console setting has changed from $FMVNCSTATE to $VALSTR"
+                  if [ "$VALSTR" == "TRUE" ];then
+                      DISABLEC=1
+                  else
+                      DISABLEC=2
+                  fi
+              else
+                  DISABLEC=0
+              fi
+              ;;
       esac
       sed -i "s/$SRCHSTR.*/${SRCHSTR}\ =\ \"$VALSTR\"/g" $LOCNEWVMX
     else
@@ -270,7 +285,7 @@ F_VMEDITOR()
   while [ -z "$LANS" ];do
           LVMX=$($YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (Check VMX)" \
                     --center --width=600 --height=800 --text \
-                    "\nThe following will show you the VMX file we will now upload.\nPlease check that it matches your needs and its correctness.\n\n" \
+                    "\nThe following will show you the VMX file we about to upload.\nPlease check that it matches your needs and its correctness.\n\n" \
                     --text-info \
                     --button="Upload":33 \
                     --button="Cancel":34 \
@@ -298,6 +313,18 @@ F_VMEDITOR()
     https_proxy="" $XFILEACC --sessionfile $AUTHSESS --server $SRV --datacentername ha-datacenter --operation put --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCNEWVMX"
     if [ $? -eq 0 ];then
       F_MSG "Congratulations. VM settings changed successfully.\n\nHINT:\nYou need to boot the VM to see the changed settings in vEMan."
+      # setup console according to the above validation result
+      if [ "$DISABLEC" == 1 ];then
+          echo "DEBUG: Enable console as it was disabled before"
+          F_ENABLEVNC
+      else
+          if [ "$DISABLEC" == 2 ];then
+              echo "DEBUG: Disable console as it was enabled before"
+              F_DISABLEVNC
+          else
+              echo "DEBUG: no console action required"
+          fi
+      fi
     else
       # backup the original data to a persistent location name
       cp -f $LOCDLVMX ${LOCDLVMX}_ORIGINALFILE
