@@ -98,7 +98,7 @@ F_VMEDITOR()
   # VAR = VMX variable
   # VARMAP= Name mapping for that variable
   # Both are needed and the "MAP" one will be shown in the Description
-  RAMSIZE="memsize"
+  RAMSIZE="memSize"
   RAMSIZEMAP="RAM in Megabytes"
   DNAME="displayName"
   DNAMEMAP="Display Name"
@@ -109,9 +109,11 @@ F_VMEDITOR()
   RVNCSTATE="RemoteDisplay.vnc.enabled"
   RVNCSTATEMAP="Uncheck to disable console for this VM"
   VCPUS="numvcpus"
-  VCPUSMAP="Number of CPUs"
+  VCPUSMAP="Total CPU count (CPU core * socket)"
+  VCPUSOCKET="cpuid.coresPerSocket"
+  VCPUSOCKETMAP="Cores per socket"
 
-  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $RVNCPORT $RVNCSTATE)
+  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $VCPUSOCKET $RVNCSTATE $RVNCPORT)
   
   # order is important! new vars needs to be also parsed in "present changeable data" section!
   #ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus RemoteDisplay.vnc.enabled)
@@ -125,11 +127,25 @@ F_VMEDITOR()
     if [ ! -z "$VMXVALG" ];then
         echo "DEBUG: VMX arg $VMXVALG detected."
     else
-        echo "DEBUG: VMX arg $VMXVALG NOT present."
-        VMXVALG="$VMXVAL = \"UNKNOWN\""
+        echo "DEBUG: VMX arg $VMXVAL NOT present."
+        # special handling in case of CPU. if it is not defined it will be 1 CPU
+        if [ "$VMXVAL" == "$VCPUS" ];then
+                VMXVALG="$VMXVAL = \"1\""
+        else
+            # special handling in case of CPU core per socket. if it is not defined it will be 1 core per socket
+            if [ "$VMXVAL" == "$VCPUSOCKET" ];then
+                VMXVALG="$VMXVAL = \"1\""
+            else                
+                VMXVALG="$VMXVAL = \"UNKNOWN\""
+            fi
+        fi
     fi
     if [ ! -z "$VMXARR" ];then
+      VMXVAL=$(echo $VMXVALG| cut -d"=" -f1 |sed 's/[[:space:]].*$//g')
       VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+      if [ "$VMXVAL" == "$RVNCSTATE" ];then
+          VMXVALG=$(echo $VMXVALG| cut -d"=" -f2|tr [[:lower:]] [[:upper:]])
+      fi
       VMXARR=(${VMXARR[@]},$VMXVALG)
       echo "DEBUG: $VMXVALG added to array. Now: ${VMXARR[@]}"
     else
@@ -146,18 +162,6 @@ F_VMEDITOR()
     [ "$RETEDIT" == "222" ]||[ "$RETEDIT" == "252" ]&& break
     # else ask (again)
     echo "$TARGETVM" >$YADREST
-    # special shit. the number of CPUs are not a required field in a VMX
-    # so it could be that it is NOT set! But we still need to ensure we see valid data
-    echo "${VMXARR[@]}" |grep -i $VCPUS >/dev/null
-    if [ $? -eq 0 ];then
-      echo "DEBUG: numvcpus are set. ok."
-    else
-      echo "DEBUG: numvcpus are not set. will do so."
-      echo "DEBUG: before: ${VMXARR[@]}"
-      XMLCPUNO=$($PYPARS --readxml -x $PTARGXML -m xmltag -t noCPU)
-      VMXARR=(${VMXARR[@]},$XMLCPUNO)
-      echo "DEBUG: after: ${VMXARR[@]}"
-    fi
     echo "${VMXARR[@]}" |tr -d '\"' | sed 's/,/\n/g' >> $YADREST
     sed -i 's/^[[:space:]]*//g' $YADREST
 
@@ -167,18 +171,19 @@ F_VMEDITOR()
     F_DETECTVNC "$TARGETVM" "detectonly"
     echo 90 >> $PRGRSFILE
     unset FMVNCPORT FMVNCSTATE
-    FMVNCPORT=$(grep -i "$RVNCPORT" $LOCNEWVMX)
+    FMVNCPORT=$(grep "$RVNCPORT" $LOCNEWVMX)
+    FMVNCSTATE=$(grep "$RVNCSTATE" $LOCNEWVMX |grep -i true)
     if [ $? -eq 0 ];then
-      FMVNCSTATE=TRUE
-      FMVNCPORT=$(echo ${FMVNCPORT//*=/} | tr -d '"')
+      FMVNCSTATE="TRUE"
+      FMVNCPORT=$(echo ${FMVNCPORT//*=/} | tr -d '"'|tr -d [[:space:]])
       FLVNCPORT="--field=Console-Port"
       RVNCSTATEMAP='Uncheck to disable'
     else
-      FMVNCSTATE=FALSE
+      FMVNCSTATE="FALSE"
       RVNCSTATEMAP='Check to enable'
       FMVNCPORT='auto'
     fi
-    echo $FMVNCSTATE >> $YADREST
+    #echo $FMVNCSTATE >> $YADREST
 
     # calculate possible values for the fields
     # TODO !!!!
@@ -198,8 +203,9 @@ F_VMEDITOR()
             --field="$DNAMEMAP" \
             --field="$ETH0NAMEMAP":CBE "$NETS"\
             --field="$VCPUSMAP" \
+            --field="$VCPUSOCKETMAP" \
             --field="$RVNCSTATEMAP console (Port: $FMVNCPORT):CHK" \
-            --button="Activate changes":77 \
+            --button="Validate changes":77 \
             --button="Cancel":1 \
             --rest="$YADREST" \
             --always-print-result))
@@ -210,22 +216,28 @@ F_VMEDITOR()
       exit $RETEDIT
     fi
 
+    CEDITANS=$(echo "${EDITANS}$FMVNCPORT|")
     echo "DEBUG: selected VM was $TARGETVM, answer was $RETEDIT settings was: $EDITANS" 
-    if [ "$COMPPRE" == "$EDITANS" ];then
+    echo "DEBUG: comparing previous settings:"
+    echo "DEBUG: $COMPPRE with $CEDITANS"
+    if [ "$COMPPRE" == "$CEDITANS" ];then
       echo "DEBUG: Nothing has changed!"
+      UPLOADNEED=0
     else
+      UPLOADNEED=1
       echo "DEBUG: There are changes"
         # parse answer and write it in an array
         # memsize displayName ethernet0.networkName RemoteDisplay.vnc.port
-        ARRNEWVMX=(memsize=\"$(echo "$EDITANS" | cut -d"|" -f2)\" \
+        ARRNEWVMX=(memSize=\"$(echo "$EDITANS" | cut -d"|" -f2)\" \
                     displayName=\"$(echo "$EDITANS" | cut -d"|" -f3)\" \
                     ethernet0.networkName=\"$(echo "$EDITANS" | cut -d"|" -f4)\" \
                     numvcpus=\"$(echo "$EDITANS" | cut -d"|" -f5)\"\
-                    RemoteDisplay.vnc.enabled=\"$(echo "$EDITANS" | cut -d"|" -f6)\"\
+                    cpuid.coresPerSocket=\"$(echo "$EDITANS" | cut -d"|" -f6)\"\
+                    RemoteDisplay.vnc.enabled=\"$(echo "$EDITANS" | cut -d"|" -f7)\"\
                     )
     fi
   done
-
+if [ "$UPLOADNEED" == 1 ];then
   # Fetching ESX infos we need for validation
   https_proxy="" $XHOSTINF --server $SRV --sessionfile $AUTHSESS --fields memoryusage,memorysize,cpucores --machinereadable --fileoutput $XMLESX
   [ $? -ne 0 ] && F_MSG "ERROR while fetching ESX data for validation..ABORTED." && exit
@@ -247,8 +259,31 @@ F_VMEDITOR()
                 F_MSG "Oops. Unfortunately the number of CPUs seems to be limited to \n         $MAXCPUNO cores.\nYour choice will be adapted accordingly for your convenience."
                 VALSTR="$MAXCPUNO"
               fi
+              CPUCOUNT="$VALSTR"
               ;;
-        memsize)
+        cpuid.coresPerSocket)
+              echo "DEBUG: Reached number of CPU core per socket validation..."
+              MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+              #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
+              echo "DEBUG: cpu count selected: $CPUCOUNT and cores per socket: $VALSTR"
+              echo "DEBUG: Lets check if that makes sense..."
+              #ALLOWEDSOCK="$(echo "scale=0; \$CPUCOUNT / \$VALSTR" | bc)"
+              UVALSTR=$VALSTR
+              let CALLOWEDSOCK="$CPUCOUNT/$VALSTR"
+              echo "DEBUG: max allowed by your total cpu count = $CALLOWEDSOCK"
+              if [ $CALLOWEDSOCK == 0 ];then F_MSG "Oops you selected more cores per socket than total cpus available!!\nwill set max core per socket to 1." ; VALSTR=1;fi
+
+              let MALLOWEDSOCK="$MAXCPUNO/$VALSTR"
+              let MALLOWEDSOCCPU="$MALLOWEDSOCK*$VALSTR"
+              echo "DEBUG: max allowed by total available = $MALLOWEDSOCK"
+
+              if [ "$VALSTR" -gt "$CALLOWEDSOCK" ];then
+                F_PARENTF F_VMEDITOR
+                F_MSG "ERROR" "CPU cores per socket (your choice): $UVALSTR\nTotal CPUs (your choice): $CPUCOUNT\nTotal CPUs (max available): $MAXCPUNO\n\nDepending on the current total cpu count (see above) your max allowed core per socket value is $MALLOWEDSOCK (results in a total of $MALLOWEDSOCCPU CPUs).\n\nABORTED.\n\nTry again the calculation is easy:\n\ntotal cpu count ($MAXCPUNO) / your-choice = max cores per socket     \n\n(rounding to 1 digit of course).\n"
+                exit
+              fi
+              ;;              
+        memSize)
               echo "DEBUG: Reached number of RAM validation..."
               PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
               USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
@@ -262,14 +297,18 @@ F_VMEDITOR()
               # this will only prepare the console handling not do anything. 
               # enable/disable console will be done after uploading first.
               echo "DEBUG: Reached VNC Console validation..."
+              VALSTR=$(echo $VALSTR|tr [[:lower:]] [[:upper:]])
               if [ "$FMVNCSTATE" != "$VALSTR" ];then
                   echo "DEBUG: console setting has changed from $FMVNCSTATE to $VALSTR"
                   if [ "$VALSTR" == "TRUE" ];then
+                      echo "DEBUG: console will be enabled now"
                       DISABLEC=1
                   else
+                      echo "DEBUG: console will be disabled now"
                       DISABLEC=2
                   fi
               else
+                  echo "DEBUG: console setting has not changed"
                   DISABLEC=0
               fi
               ;;
@@ -335,6 +374,8 @@ F_VMEDITOR()
     exit
   fi
   # TODO: flush vEMan caches!
-
+else
+    F_MSG "Nothing changed so no upload anything."
+fi
 }
 export -f F_VMEDITOR

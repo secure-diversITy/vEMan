@@ -11,8 +11,18 @@ F_MSG()
 	# we will always print the message to the stdout, too
 	echo "DEBUG: $MSG"
 
+    if [ "$1" == "ERROR" ];then
+	    $YAD --window-icon="$LOGO" --title="$TITLE (ERROR)" --on-top --center --text "$MSG\n\n$2" --image dialog-error --selectable-labels --button Retry:0  --button=Cancel
+        if [ $? -eq 0 ];then
+             echo "DEBUG: trying to reach parent function... (F_PARENTF)"
+            F_PARENTF
+        else
+            echo "DEBUG: aborted by user"
+            # ??? F_EXIT
+        fi
+    else
         $YAD --window-icon="$LOGO" --title="$TITLE (InfoBox)" --on-top --center --text "$MSG" --image dialog-information --selectable-labels --button=OK
-	
+    fi
 }
 
 export -f F_MSG

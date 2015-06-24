@@ -14,8 +14,26 @@ to disable the ESX firewall - at least - temporarly. To do so follow those steps
 
 1) login as user "root" to your ESX by SSH
 2) execute this command:
+	$> esxcli network firewall get
+	output:
+		Default Action: DROP
+		Enabled: true
+		Loaded: true
 	$> esxcli network firewall set --enabled false
 	(detailed information here: http://kb.vmware.com/kb/2005284)
+	$> esxcli network firewall get
+	output:
+		Default Action: DROP
+		Enabled: false
+		Loaded: true
+	$> esxcli network firewall refresh
+	$> esxcli network firewall unload
+	$> esxcli network firewall get
+	output:
+		Default Action: PASS
+		Enabled: false
+		Loaded: false
+	
 3) then start vEMan and try to connect to a VM console
 
 If that works fine it IS a problem with the ESX firewall which is not allowing you to connect to the VM console.
@@ -25,6 +43,13 @@ Regardless of the above result you should enable the ESX firewall again:
 1) login as user "root" to your ESX by SSH
 2) execute this command:
 	$> esxcli network firewall set --enabled true
+	$> esxcli network firewall refresh
+	$> esxcli network firewall load
+	$> esxcli network firewall get
+	output:
+		Default Action: DROP
+		Enabled: true
+		Loaded: true
 
 
 **************************************************************************************
@@ -34,8 +59,19 @@ the following guide to add a permanent firewall rule for vEMAn.
 
 **************************************************************************************
 
+Enable vEMan console (VNC) in VMware ESX(i) 6.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can do it the same way as for 5.X or you can choose the GUI way instead.
+Using the GUI will allow more than the VNC ports only but it is a more convenient way to open those ports:
+
+1) Login with a Windows vSphere Client to your ESX.
+2) Select your ESX host in the left panel and got to "Configuration" tab
+3) Under "Software" click on "Security Profile" and then on the right site Firewall --> Properties
+4) Search in the list for "gdbserver" and enable it
+
 Enable vEMan console (VNC) in VMware ESX(i) 5.1
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1) Enable SSH in ESX(i) (Open ESX server console and open 'Troubleshooting Options')
 2) Login with SSH and as user 'root' to the ESX
@@ -57,7 +93,7 @@ Enable vEMan console (VNC) in VMware ESX(i) 5.1
 # VMware support.
 
 #----> vEMan VNC console <----#
-cat > /etc/vmware/firewall/enablevnc.xml <<__EOFVNC                 
+cat > /etc/vmware/firewall/enablevnc.xml <<__EOFVNC
 <!-- Firewall configuration information -->                         
 <ConfigRoot>                                                        
  <!-- VNC -->                                                    
@@ -85,7 +121,7 @@ cat > /etc/vmware/firewall/enablevnc.xml <<__EOFVNC
     <required>false</required>
    </service>                 
 </ConfigRoot>                 
-__EOFVNC                      
+__EOFVNC
                               
 # We need a short sleep to make sure firewall reload works:
 echo 'Activating custom rule set..' && sleep 10s && esxcli network firewall refresh
