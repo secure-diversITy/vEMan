@@ -25,7 +25,7 @@ Requirements
 	Besides the VMware requirements you need to have some standard Linux tools
 	installed to get vEMan running:
 
-	netcat, yad (***), a vncviewer (like tightvncviewer or similar), openssl,
+	netcat, yad (***), a vncviewer (like http://tigervnc.org/ or similar), openssl,
 	bash, grep, sed, python (v2.5 or higher)
 
 Recommended versions

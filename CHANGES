@@ -78,6 +78,16 @@ PREVIEW // 2015-06-25
 					problem within the VM editor module but a generic one..
 		new: added some more hints to the installation process of the VMware SDK
 		new: updated installation info for fedora in INSTALL
+        new: added README hint for vmapps dir
+        new: added hint for TigerVNC as recommended (more responsive, more stable, more current, less crashes!)
+        fix: removed some old hints for perl SDK
+        fix(!): bug in console detection prevents from enabling the console in some cases
+        fix: added terminal=1 to the desktop icon as at least for Ubuntu 14.04 vEMan won't start otherwise
+        fix: (VM Editor) all fields needed to are forced to be a digit
+        new: new function (GETHOSTINF) for fetching all ESX host info in one step 
+        
+        WIP: VM Editor still not ready to use!!
+        WIP: Deploy new VM (create not OVF) still not ready to use!!
 	
 		Have fun! 
 

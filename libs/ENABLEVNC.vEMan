@@ -15,6 +15,9 @@ F_ENABLEVNC()
         F_GETFREEPORT
 #       fi
         echo 60 >> $PRGRSFILE
+        
+        echo "DEBUG: full vm path found at: $FULLVMPATH"
+        
         https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.enabled true \
           && echo 80 >> $PRGRSFILE \
           && https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.port $VNCPORT

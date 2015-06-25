@@ -199,11 +199,11 @@ F_VMEDITOR()
     EDITANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=600 --form \
             --text "Edit the settings you want to change only:\n" \
             --field="Selected system":RO \
-            --field="$RAMSIZEMAP" \
+            --field="$RAMSIZEMAP":NUM \
             --field="$DNAMEMAP" \
             --field="$ETH0NAMEMAP":CBE "$NETS"\
-            --field="$VCPUSMAP" \
-            --field="$VCPUSOCKETMAP" \
+            --field="$VCPUSMAP":NUM \
+            --field="$VCPUSOCKETMAP":NUM \
             --field="$RVNCSTATEMAP console (Port: $FMVNCPORT):CHK" \
             --button="Validate changes":77 \
             --button="Cancel":1 \

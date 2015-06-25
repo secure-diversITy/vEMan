@@ -1,0 +1,30 @@
+# Fetch ESX host information
+F_GETHOSTINF()
+{
+    F_GETCFG
+    
+    # the ESX info XML
+    XMLESX="$VMCDIR/${SRV}.esxinfo"
+    [ -f $XMLESX ]&& rm -vf $XMLESX && echo "DEBUG: deleted old $XMLESX..."
+    
+    # Fetching ESX infos we need for validation
+    https_proxy="" $XHOSTINF --server $SRV --sessionfile $AUTHSESS --fields hostname,memoryusage,memorysize,cpucores --machinereadable --fileoutput $XMLESX
+    [ $? -ne 0 ] && F_MSG "ERROR" "while fetching ESX data for validation..ABORTED." && exit
+
+    # parsing the fetched values:
+    SRVDNS=$($PYPARS --readxml -x $XMLESX -m xmltag -t HostName)
+    [ -z $SRVDNS ] && F_MSG "ERROR" "while fetching ESX dns name! ABORTED." && exit
+    
+    MAXCPUCOUNT=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+    [ -z $MAXCPUCOUNT ] && F_MSG "ERROR" "while fetching ESX CPU count! ABORTED." && exit
+
+    PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
+    [ -z $PHYMEM ] && F_MSG "ERROR" "while fetching ESX physical memory! ABORTED." && exit
+
+    USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
+    [ -z $USEDMEM ] && F_MSG "ERROR""while fetching ESX used memory! ABORTED." && exit
+
+    MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
+    [ -z $MAXMEM ] && F_MSG "ERROR" "while calculating ESX available max memory! ABORTED." && exit
+}
+export -f F_GETHOSTINF

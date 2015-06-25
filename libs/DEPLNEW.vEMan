@@ -1,0 +1,60 @@
+# deploy a new VM 
+F_DEPLNEW()
+{
+    F_NOTREADY
+    
+#    F_GETCFG
+
+    # FIXME: check if a console session would be possible?? hm how? I_can do that later only when the VM is there..
+    #        well or at least we should display the esx-fw hint!
+
+    
+    # FIXME: add a progress bar here because the following scans will take some time to complete:
+	F_SCANDS
+	F_SCANNET
+#   FIXME: F_GETHOSTOSES
+    F_GETHOSTINF
+    
+    # show the setup dialog
+    STEP1ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 1)" --width=600 --form --item-separator="|" \
+            --text "Setup your new VM:\n" \
+            --field="VM Name" ""\
+            --field="Operating System":CB "$OSES"\
+            --field="CPU total count (available: $MAXCPUCOUNT)":NUM 1\
+            --field="CPU cores per socket":NUM 1\
+            --field="RAM in MB (available: $MAXMEM)":NUM 256\
+            --field="Network":CB "$NETS"\
+            --field="Datastorage":CB "$STORES"\
+            --field="Open console when finished":CHK true\
+            --field="Power on VM when finished":CHK true\
+            --button="Step 2":77 \
+            --button="Cancel":1 \
+            --always-print-result))
+    RETSTEP1=$?
+    echo "DEBUG: answer of step 1 was: $STEP1ANS"
+    
+    # dynamic calculations need to be done in a second step
+    STEP2ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 2)" --width=600 --form --item-separator="|" \
+            --text "Configure your VM:\n" \
+            --field="VM Name":RO "$VMNAME"\
+            --field="Disk size in MB ($FREESPACE available)":NUM 0\
+            --field="Disk provisioning type":CB "thin|thick" \
+            --button="Step 3":77 \
+            --button="Cancel":1 \
+            --always-print-result))
+    RETSTEP2=$?
+    echo "DEBUG: answer of step 2 was: $STEP2ANS"
+    
+    # ISO selection
+    STEP3ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy $VMNAME - Step 3)" --width=700 --height=700 --file --quoted-output\
+            --text "\n Please select a local ISO image as installation source for $VMNAME.\n The choosen ISO will be attached to your VM:\n\n" \
+            --file-filter="ISO|*.iso *.ISO" \
+            --field="Local installation ISO":FL\
+            --button="Step 4":77 \
+            --button="Cancel":1 \
+            --always-print-result))
+    RETSTEP3=$?
+    echo "DEBUG: answer of step 3 was: $STEP3ANS"
+
+}
+export -f F_DEPLNEW

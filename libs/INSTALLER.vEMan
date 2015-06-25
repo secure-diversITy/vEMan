@@ -38,12 +38,13 @@ F_INSTALLER()
 		cat > vEMan.desktop <<EOFICO
 [Desktop Entry]
 Encoding=UTF-8
-Version=1.0
+Version=1.1
 Name=vEMan
 Comment=An unofficial VMware ESX/ESXi Manager for Linux
 Type=Application
 Exec=$INSTSELECT/vEMan
 Icon=$INSTSELECT/pics/vEMan_logo_beta.png
+Terminal=1
 EOFICO
 
         unset YADEX CPRET

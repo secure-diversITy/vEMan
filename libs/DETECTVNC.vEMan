@@ -35,7 +35,7 @@ F_DETECTVNC()
         if [ "$DETONLY" == "xdetectonly" ];then
                 echo "DEBUG: detectonly."
         else
-                if [ -z "$DETPORT" ]||[ "$VNCSTATE" == "disabled"];then
+                if [ -z "$DETPORT" ]||[ "$VNCSTATE" == "disabled" ];then
                         echo "No VNC port found or VNC isn't active atm."
                         $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "Console seems to be NOT enabled..!\nDo you want to enable the console for this host?" --image dialog-error --button "Enable console":0  --button=Cancel
                         if [ $? -eq 0 ];then
