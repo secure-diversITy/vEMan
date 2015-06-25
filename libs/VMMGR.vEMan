@@ -13,7 +13,7 @@ F_VMMGR()
                 echo "DEBUG: getting VM info" 
                 unset INFANS RETINF
 
-                while [ -z "$INFANS" ];do
+                while [ -z "$INFANS" ]||[ x"$RETINF" == "x10" ];do
                         [ "$RETINF" == "222" ]||[ "$RETINF" == "252" ]&& break
 
                         # convert to an unproblematic filename 
@@ -51,12 +51,12 @@ F_VMMGR()
                                 echo "DEBUG: Returning to vEMan main screen ($RETINF).."       
                                 INFANS=$RETINF
                         else
-				if [ "$RETINF" -eq 88 ];then
-					echo "DEBUG: starting VM destroy manager"
-					TARGETVM="$TARGETVM" F_DELETEVM
-				else
-					echo "DEBUG: Returning to VM info screen ($?)"
-				fi
+                            if [ "$RETINF" -eq 88 ];then
+                                echo "DEBUG: starting VM destroy manager"
+                                TARGETVM="$TARGETVM" F_DELETEVM
+                            else
+                                echo "DEBUG: Returning to VM info screen ($?)"
+                            fi
                         fi
                 done
         
