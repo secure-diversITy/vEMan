@@ -9,15 +9,37 @@
 vEMan History
 -----------------------------------------
 
-MASTER // MASTER
-                new(!): introduced several ESX operation actions!
-                       now you can do the following operations on your ESX:
-                       - enter maintenance mode
-                       - exit maintenance mode
-                       - reboot (requires maintenance mode on)
-                       -shutdown (requires maintenance mode on)
-                new: some preparations for new deploy mode
-                new: hint for v6.0 perl SDK in README
+PREVIEW // 2015-06-25
+
+        new: when an unsupported ovftool version was detected we now continue
+             instead of aborting (giving a hint of course)
+        new/fix: complete rewrite of the ESX firewall readme
+                - using copy and paste is a mess in esx ssh so added a here doc to
+                  add all the relevant code in a readable manner
+                - changes regarding the esxcli commands to be better prepared and setup
+        fix: VM info refresh sometimes opening main screen instead of refreshing
+        new: (internal) infobox window now supports error messages without exiting
+        new(!): (VM editor) added coresPerSocket support!
+        fix(!): (VM editor) problems when total cpu count is 1 which means unset by esx
+        fix: (VM editor) wrong console detection
+        fix: (VM editor) wording to "validate" instead "activate" changes
+        fix(!): (VM editor) comparison of change detection was not working
+        fix(!): (VM editor) upload window was shown even when there were no changes
+        new(!): (VM editor) added calculation for cores per socket and total cpu count
+        new: (VM editor) added a little bit more debug output to console action
+        fix(!): (VM editor) removed debug code so the editor works again
+        fix: (VM editor) added a check if console setting has changed by user and
+             do the change if needed (only)
+        fix(!): (VM editor) a problem with RAM detection
+        fix(!): (VM editor) a problem with CPU count detection
+        new(!): introduced several ESX operation actions!
+               now you can do the following operations on your ESX:
+               - enter maintenance mode
+               - exit maintenance mode
+               - reboot (requires maintenance mode = on)
+               - shutdown (requires maintenance mode = on)
+        new: some preparations for new deploy mode
+        new: hint for v6.0 perl SDK in README
 		new: added a skip-button for creating vEMan desktop icon when installing
 		new(!): introducing the first official vEMan Compendium!!!! Check it out on the project page.
 		fix: license was not displayed correctly on smaller screens.. 

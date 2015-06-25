@@ -619,12 +619,9 @@ case "$OVFVERS" in
 	     TMSG="Buggy ovftool version"
 	     F_OVFERR "$TMSG"
 	;;
-	3.0.1) # untested version
-	     echo "DEBUG: ovftool v3 is untested.."
-	;;
-	*) # unknown version or not installed
-	     TMSG="Unknown ovftool version"
-	     F_OVFERR "$TMSG"
+	*) # unknown version or not supported
+	     TMSG="Unknown/Untested ovftool version!"
+         F_MSG "You have an unsupported or unknown ovftool version installed (result was: $OVFVERS)!\n\nvEMan will continue but you may not be able to deploy\n\n- OVF\n- VMX\n\nEnsure you use a supported ovftool version."
 	;;
 esac
 
