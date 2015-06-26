@@ -13,7 +13,7 @@ F_VMMGR()
                 echo "DEBUG: getting VM info" 
                 unset INFANS RETINF
 
-                while [ -z "$INFANS" ]||[ x"$RETINF" == "x10" ];do
+                while [ -z "$INFANS" ]||[ x"$RETINF" == "x10" ]||[ x"$RETINF" == "x0" ];do
                         [ "$RETINF" == "222" ]||[ "$RETINF" == "252" ]&& break
 
                         # convert to an unproblematic filename 
@@ -37,7 +37,8 @@ F_VMMGR()
                         # everything will be better ;o)
                         # ah and that change here (using a python xml parser) at least gives a little speed up ;o)
 
-                        INFANS=$(echo -e "$XMLOUT" |$YAD --window-icon="$LOGO" --title="$TITLE (VM Manager)" --center --height 600 --width 600 --list --column "Type" --column "Output" --always-print-result\
+                        INFANS=$(echo -e "$XMLOUT" |$YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (VM Manager)" --center --height 600 --width 600 --list --column "Type" --column "Output" --always-print-result\
+                                  --text "Live data for your selected VM: $TARGETVM\n\nDoubleclick anywhere or on 'Edit' will open the VM editor.\n" \
                                   --button="Console":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_CONSOLEMGR'" \
                                   --button="Power":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_POWER'"\
                                   --button="Snapshots":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_SNAPMGR'"\
@@ -47,17 +48,23 @@ F_VMMGR()
                                   --button="Back":222)
 
                         RETINF=$?
-                        if [ "$RETINF" == 252 ]||[ "$RETINF" == "222" ];then
-                                echo "DEBUG: Returning to vEMan main screen ($RETINF).."       
+                        case "$RETINF" in
+                            252|222)
+                                echo "DEBUG: Returning to vEMan main screen ($RETINF).."
                                 INFANS=$RETINF
-                        else
-                            if [ "$RETINF" -eq 88 ];then
+                            ;;
+                            88)
                                 echo "DEBUG: starting VM destroy manager"
                                 TARGETVM="$TARGETVM" F_DELETEVM
-                            else
+                            ;;
+                            0)
+                                echo "DEBUG: starting VM Editor because doubleclick detected"
+                                bash -c "TARGETVM=$TARGETVM PTARGXML=$PTARGXML $VLIBFNC F_VMEDITOR"
+                            ;;
+                            *)
                                 echo "DEBUG: Returning to VM info screen ($?)"
-                            fi
-                        fi
+                            ;;
+                        esac
                 done
         
                 F_ESXMGR
