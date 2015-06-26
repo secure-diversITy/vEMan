@@ -1,0 +1,94 @@
+# manage the console password
+F_CONSOLEPW()
+{
+        F_GETCFG
+        # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
+        echo 100 >> $PRGRSFILE
+        echo 0 > $PRGRSFILE
+        
+        unset VANS CANS CURCONPWSTATE
+        
+        if [ -z "$TARGETVM" ];then
+                echo " DEBUG: ERROR: No VM host selected?"
+                MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+                F_ESXMGR
+        fi
+        
+        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Checking current protection..." --auto-kill --auto-close &
+        echo 10 >> $PRGRSFILE
+        F_GETVMPATH
+        echo 50 >> $PRGRSFILE
+        CURCONPWSTATE=$(https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH getguestinfo RemoteDisplay.vnc.password | grep RemoteDisplay.vnc.password |cut -d"=" -f 2 |tr -d " ")
+        echo "DEBUG: result of pw check was: $?"
+        echo 100 >> $PRGRSFILE
+        #DEBUG CODE:
+        #echo "DEBUG: result of pw check was: $CURCONPWSTATE"
+        
+        while [ -z "$CANS" ];do
+            VANS=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=700 --height=300 --form \
+                    --text "This will show you the current state of password protection\n\
+and gives you the option to either protect or remove protection.\n\n\
+Prevent unauthorized access to this console by direct access:\n\
+vEMan console means a tcp connection to your ESX to a specific port.\n\
+Every user who knows the ESX ip address could try out the known VNC ports\n\
+and will be able to open a direct console to your VM\n\
+- without any authentication!\n\n\
+To avoid that it is highly recommended to protect your console.\n" \
+                    --field=:LBL false\
+                    --field="Selected system":RO "$TARGETVM"\
+                    --field="Current password":RO "${CURCONPWSTATE}"\
+                    --field=:LBL false\
+                    --field="New console password\n<span foreground='red'>(do not use \" or | chars!)</span>":H \
+                    --button="Set password":11 \
+                    --button="Remove password":22 \
+                    --button="Close":222 \
+                    --always-print-result)
+            CANS=$?
+            #|VM|||password|
+            NEWCONPW=$(echo $VANS|cut -d"|" -f5)
+            # strip the password
+            XXXVANS=$(echo $VANS|cut -d"|" -f1-4)
+            echo "DEBUG: CANS was: $CANS and answer: $XXXVANS (password hidden in output)"
+          
+            # if user aborts or clicking on close button we set the VANS manually
+            # (we could also use break here but .. well there are so many ways..
+            if [ $CANS -eq 252 ]||[ $CANS -eq 222 ];then
+                    CANS=222
+            fi
+
+            echo 100 >> $PRGRSFILE
+            echo 1 > $PRGRSFILE
+            
+            case "$CANS" in
+                11) # set pw
+                    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Set protection..." --auto-kill --auto-close &
+                    echo 10 >> $PRGRSFILE
+                    echo "DEBUG: setting console pw now.. perc state: $(cat $PRGRSFILE)"
+                    TARGETVM="$TARGETVM" F_SETCONPW "$NEWCONPW"
+                ;;
+                22) # remove pw
+                    F_MSG "Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman  \nif you want to push that.\n\nWe will continue but do not expect that anything is working!"     
+                    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Removing protection..." --auto-kill --auto-close &
+                    echo 50 >> $PRGRSFILE
+                    echo " DEBUG: CANS is $CANS"
+                    https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.password ""
+                    RMVPWRET=$?
+                    echo 100 >> $PRGRSFILE
+                    if [ "$RMVPWRET" -ne 0 ];then
+                        F_MSG "ERROR" "Removing password was not possible (errorcode was: $RMVPWRET).. Please try again.."
+                        exit
+                    else
+                        F_MSG "Well as you requested: your server console on:\n\n <span font_weight='bold'>$TARGETVM</span>\n\nis totally unprotected now!\n\nEnsure that you disable console or <span font_weight='bold'>everyone</span> could access your server console now.."
+                    fi
+                ;;
+                *) # close pw manager
+                    echo " DEBUG: close button or aborted by user.. (CANS is $CANS)"
+                    echo 100 >> $PRGRSFILE
+                ;;
+            esac
+        done
+        echo "DEBUG: closing console PW manager"
+        echo 100 >> $PRGRSFILE
+}
+export -f F_CONSOLEPW

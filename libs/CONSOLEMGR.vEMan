@@ -10,12 +10,28 @@ F_CONSOLEMGR()
         fi
 
         while [ -z "$CANS" ];do
-                VANS=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=400 --form \
+                VANS=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=800 --height=400 --form \
+                        --text "Choose your console option.\n\n \
+I HIGHLY recommend <span font_weight='bold'>TigerVNC</span> to be installed because\n\
+it survives even a reboot and screen resolution changes.\n\n\
+<span font_weight='bold'>Protection:</span>\tlet you set/remove a password for the console\n\
+<span font_weight='bold'>Open:</span>\t\tbesides the obvious it will also enable it if needed\n\
+<span font_weight='bold'>Disable:</span>\t\twill disable console (and removing password if set)\n\n\
+<span font_style='italic' foreground='red'>vEMan console means a tcp connection to your ESX to a specific port.</span>\n\
+<span font_style='italic' foreground='red'>Every user who knows the ESX IP address could try out the well known VNC ports</span>\n\
+<span font_style='italic' foreground='red'>and will be able to open a direct console to your VM - </span><span foreground='blue' font_weight='bold' font_style='italic'>without any authentication!</span>\n\
+<span font_style='italic' foreground='red'>To avoid that it is highly recommended to protect your console with a secure</span>\n\
+<span font_style='italic' foreground='red'>password by choosing the <span font_style='italic' font_weight='bold'>Protection</span> option.</span>\n\n\
+<span font_style='italic'>One last thing to add:</span>\n\
+<span font_style='italic'>The console connection itself is NOT encrypted (ESX does not support SSL).</span>\n\
+<span font_style='italic'>If you want to be totally secure you may want to think about tunnel the connection</span>\n\
+<span font_style='italic'>over SSH but that is nothing vEMan supports.</span>"\
                         --field=:LBL\
                         --field="Selected system":RO \
                         --field=:LBL\
-                        --button="Open (will enable,too)":11 \
-                        --button="Enable (force)":22 \
+                        --button="Open":11 \
+                        --button="Protection":44 \
+                        --button="Enable":22 \
                         --button="Disable":33 \
                         --button="Close":222 \
                         false \
@@ -44,14 +60,15 @@ F_CONSOLEMGR()
 				TARGETVM="$TARGETVM" $VLIBFNC F_DISABLEVNC
 				echo " DEBUG: CANS is $CANS"
 			;;
+			44) # password
+				TARGETVM="$TARGETVM" $VLIBFNC F_CONSOLEPW
+				echo " DEBUG: CANS is $CANS"
+			;;            
 			*) # close manager
 				echo " DEBUG: close button or aborted by user.. (CANS is $CANS)"
 			;;
 		esac
         done
-
         echo "DEBUG: closing console manager"
-
 }
-
 export -f F_CONSOLEMGR

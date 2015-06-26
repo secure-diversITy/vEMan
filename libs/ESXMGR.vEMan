@@ -20,7 +20,7 @@ F_ESXMGR()
                 echo 100 >> $PRGRSFILE
                 TARGETVM=$(echo -e "${PWRLIST[@]}" | \
                                 $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --selectable-labels --title="$TITLE (Main window)" --show-uri --width=600 --height=700 --list \
-                                --text "vEMan - An unofficial VMware® ESX/ESXi Manager for Linux.\n\n\
+                                --text "vEMan - An unofficial VMware® ESX/ESXi Manager for Linux.\n\
 vEMan is Open Source and free software!\n\
 Commercial support available: <span foreground='red'>http://www.se-di.de/</span>\n\n\
 <span font_weight='bold'>VM Manager:</span>\tor <span font_weight='bold'>doubleclick</span> opens VM screen\n\

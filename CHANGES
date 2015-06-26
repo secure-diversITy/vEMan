@@ -7,12 +7,13 @@
 ###################################################################################################################
 
 
-PREVIEW // 2015-06-25
+PREVIEW // 2015-06-26
 #########################################################################
 
     WIP: VM Editor still not ready to use!!
     WIP: Deploy new VM (create not OVF) still not ready to use!!
-        
+    WIP: Console Manager remove password protection of console not ready!
+
     FIXES
     -----------------
     fix/new: complete rewrite of the ESX firewall readme
@@ -39,6 +40,7 @@ PREVIEW // 2015-06-25
     fix(!): bug in console detection prevents from enabling the console in some cases
     fix: added terminal=1 to the desktop icon as at least for Ubuntu 14.04 vEMan won't start otherwise
     fix: (VM Editor) all fields needed to are forced to be a digit
+    fix: multiple networks were not detected correctly
 
     ENHANCEMENTS
     -----------------
@@ -95,6 +97,17 @@ PREVIEW // 2015-06-25
     new: new function (GETHOSTINF) for fetching all ESX host info in one step 
     new: reworked the changelog to be more clear
          (separate fixes/enhancements list from this version on and some cosmetics to the rest)
+    new: many many cosmetic only changes:
+            - added a new vEMan logo size
+            - added logo to all major screens (where it makes sense)
+            - added commercial hint to main window
+            - reworked the main window helper window
+            - reordered refresh button for ESX operations
+            - renamed 'Back' button in ESX operation (prev 'Return to EMan')
+            - several wordings in several windows
+    new: (VM Manager) doubleclick will now open the edit mode
+    new: (Console Manager) detailed information when enabling console
+    new(!): (Console Manager) added an option to password protect console
 
 
 v0.9.6  // 2013-03-25

@@ -1,0 +1,35 @@
+# set console password protection
+# needs pw as argument!
+F_SETCONPW()
+{
+    F_GETCFG
+    echo 20 >> $PRGRSFILE
+    F_GETVMPATH
+    echo 50 >> $PRGRSFILE
+    NEWCONPW="$1"
+    
+    if [ -z "$TARGETVM" ];then
+        echo " DEBUG: ERROR: No VM host selected?"
+        MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+        F_ESXMGR
+    fi
+    echo 60 >> $PRGRSFILE
+    if [ -z "$NEWCONPW" ];then
+        echo 100 >> $PRGRSFILE
+        F_MSG "ERROR" "You have not typed in a password but choosen to set one!! ABORTED."
+        exit
+    else
+        echo 70 >> $PRGRSFILE
+        https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.password "$NEWCONPW"
+        SETPWRET=$?
+        echo 100 >> $PRGRSFILE
+        if [ "$SETPWRET" -ne 0 ];then
+            F_MSG "ERROR" "Setting new password was not possible (errorcode was: $SETPWRET).. Please try again and ensure you have read the hint about special chars."
+            exit
+        else
+            F_MSG "Congrats your server console on $TARGETVM is now protected!"
+        fi
+    fi
+}
+export -f F_SETCONPW
