@@ -182,10 +182,10 @@ F_LOGIN()
 
 	KNOWNSRVS=$(cat $CFGSRV |cut -d "=" -f2 |tr "\n" "|" |tr -d '"')
 	while [ -z "$SELECTION" ]||[ -z "$YANS" ]||[ -z "$VUSER" ]||[ -z "$HASHPW" ]||[ -z "$SRV" ];do
-		SELECTION=$($YAD --image="$LOGO_BIG" --item-separator="|" --image-on-top --window-icon="$LOGO" --title="$TITLE (Manage with ease)" --width=680 --height=200 --center --form --selectable-labels --text "  Check for the newest version at: $LATESTVER\n\n  Please enter your ESX server and credentials" \
+		SELECTION=$($YAD --image="$LOGO_BIG" --item-separator="|" --image-on-top --window-icon="$LOGO" --title="$TITLE (Manage with ease)" --width=680 --height=200 --center --form --selectable-labels --text "  Check for the newest version at:\n  $LATESTVER\n\n  Please enter your ESX server and credentials" \
                                 --field="ESX/vSphere server":CBE "$KNOWNSRVS" \
 				--field="Username" "$VUSER" \
-                        	--field="Password\n(passes with | and \" will not work atm)":H \
+                        	--field="Password\n(passes with | and \" will NOT work)":H \
                         	--button="Login":23 \
 				--always-print-result)
 		YANS=$?

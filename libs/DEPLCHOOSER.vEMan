@@ -8,7 +8,7 @@ F_DEPLCHOOSER()
                 PARENTF=F_ESXMGR
         fi
         echo "DEBUG: choose how to deploy.."
-        $YAD --window-icon="$LOGO" --title="$TITLE (Deploy mode)" --on-top --center --text "How do you want to deploy?\n" \
+        $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Deploy mode)" --on-top --center --text "How do you want to deploy?\n" \
              --button "New(not ready yet)":0  \
              --button "OVF/VMX":1 \
              --button=Cancel

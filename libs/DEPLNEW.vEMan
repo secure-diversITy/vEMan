@@ -1,8 +1,7 @@
 # deploy a new VM 
 F_DEPLNEW()
 {
-    F_NOTREADY
-    
+    F_MSG "Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman  \nif you want to push that."    
 #    F_GETCFG
 
     # FIXME: check if a console session would be possible?? hm how? I_can do that later only when the VM is there..
@@ -16,7 +15,7 @@ F_DEPLNEW()
     F_GETHOSTINF
     
     # show the setup dialog
-    STEP1ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 1)" --width=600 --form --item-separator="|" \
+    STEP1ANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 1)" --width=600 --form --item-separator="|" \
             --text "Setup your new VM:\n" \
             --field="VM Name" ""\
             --field="Operating System":CB "$OSES"\
@@ -34,7 +33,7 @@ F_DEPLNEW()
     echo "DEBUG: answer of step 1 was: $STEP1ANS"
     
     # dynamic calculations need to be done in a second step
-    STEP2ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 2)" --width=600 --form --item-separator="|" \
+    STEP2ANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy VM - Step 2)" --width=600 --form --item-separator="|" \
             --text "Configure your VM:\n" \
             --field="VM Name":RO "$VMNAME"\
             --field="Disk size in MB ($FREESPACE available)":NUM 0\
@@ -46,7 +45,7 @@ F_DEPLNEW()
     echo "DEBUG: answer of step 2 was: $STEP2ANS"
     
     # ISO selection
-    STEP3ANS=($($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy $VMNAME - Step 3)" --width=700 --height=700 --file --quoted-output\
+    STEP3ANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy $VMNAME - Step 3)" --width=700 --height=700 --file --quoted-output\
             --text "\n Please select a local ISO image as installation source for $VMNAME.\n The choosen ISO will be attached to your VM:\n\n" \
             --file-filter="ISO|*.iso *.ISO" \
             --field="Local installation ISO":FL\

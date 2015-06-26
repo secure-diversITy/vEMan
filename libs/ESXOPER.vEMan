@@ -26,7 +26,7 @@ F_ESXOPER()
 \\nShutdown\\nNEED Maintenance on first! Will shutdown ESX completely!!\\n4
 __EOPWRCONTENT
 
-                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --window-icon="$LOGO" --center --title="$TITLE ($SRVDNS operations)" --width=900 --height=300 --list \
+                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE ($SRVDNS operations)" --width=900 --height=300 --list \
                         --text "Select an action and click at the 'Do' button: \n\n (your ESX server: $SRVDNS)\n" \
 			--radiolist\
 			--column=Click \

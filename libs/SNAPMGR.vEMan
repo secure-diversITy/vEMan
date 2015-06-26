@@ -40,7 +40,8 @@ F_SNAPMGR()
                         SNAPANS=$(https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation list --vmname "$TARGETVM" \
                                         | sed -n '/Name/,$p' | grep -vi Quiesced \
                                         | tee >(sleep 4s && echo 100 >> $PRGRSFILE.SNAP) \
-                                        | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 600 --width 600 --list --column "Detected Snapshots" \
+                                        | $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 600 --width 600 --list --column "Detected Snapshots" \
+                                        --text "The snapshots are displayed in their hierarchial order reflected by indents" \
                                         --button="Create":10 \
                                         --button="Revert to":11 \
                                         --button="Remove":12 \
@@ -64,7 +65,8 @@ F_SNAPMGR()
                                 unset NAMESNAP RETCRT
                                 while [ -z "$NAMESNAP" ];do
                                 [ "$RETCRT" == "90" ]||[ "$RETCRT" == "252" ]&& break
-                                        NAMESNAP=$($YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
+                                        NAMESNAP=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
+                                                 --text "Please setup your snapshot:" \
                                                 --field="Selected VM":RO "$TARGETVM" \
                                                 --field="Snapshot name" \
                                                 --button=Abort:90 \
@@ -157,7 +159,7 @@ F_SNAPMGR()
                                         if [ -z "$SELSNAP" ];then
                                                 echo "DEBUG: ERROR - snapshot var SELSNAP is empty (based on $SNAPANS)"
                                         else
-                                                NEWNAMESNAP=$($YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
+                                                NEWNAMESNAP=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --always-print-result --center --height 100 --width 500 --form \
                                                         --field="Selected VM":RO "$TARGETVM" \
                                                         --field="Current snapshot name":RO "$SELSNAP" \
                                                         --field="New snapshot name" \
@@ -174,7 +176,7 @@ F_SNAPMGR()
                                                                 echo "DEBUG: ERROR - converting snapshot name failed ($NEWNAMESNAP,$CONVSNAP)"
                                                         else
                                                                 https_proxy="" $XVMSNAPMGR --sessionfile $AUTHSESS --server $SRV --operation rename --vmname "$TARGETVM" --snapshotname "$SELSNAP" --newname "$CONVSNAP" \
-                                                                 | $YAD --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
+                                                                 | $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Snapshot Manager)" --center --height 200 --width 1000 \
                                                                         --text "The result will be displayed here in a few seconds..." \
                                                                         --list --column Result \
                                                                         --button=Close

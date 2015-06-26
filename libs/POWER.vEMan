@@ -28,7 +28,7 @@ F_POWER()
 \\nStandby (requires vmtools)\\nPAUSE the VM with VMware tools. Use 'Start/Resume' to resume.\\n7
 __EOPWRCONTENT
 
-                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --window-icon="$LOGO" --center --title="$TITLE (Power Manager)" --width=900 --height=300 --list \
+                PWRANS=$(echo -e "$PWRCONTENT" | $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Power Manager)" --width=900 --height=400 --list \
                         --text "Select an action and click at the 'Do' button: \n\n(selected system: $TARGETVM)\n" \
 			--radiolist\
 			--column=Click \

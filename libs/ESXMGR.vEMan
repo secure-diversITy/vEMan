@@ -19,13 +19,14 @@ F_ESXMGR()
                 F_CRTVMLIST
                 echo 100 >> $PRGRSFILE
                 TARGETVM=$(echo -e "${PWRLIST[@]}" | \
-                                $YAD --window-icon="$LOGO" --center --title="$TITLE (Main window)" --width=600 --height=700 --list \
-                                --text "Select and enjoy your task \n\n\
-Info:\n\
-   - Doubleclick a VM, or select 'VM Manager' will open VM specific settings\n\
-   - 'Deploy' will open the deployment wizard to upload your VM\n\
-   - 'ESX Manager' will open the ESX host Manager\n\
-   - 'Refresh' will enforce a refresh of the VM list\n" \
+                                $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --selectable-labels --title="$TITLE (Main window)" --show-uri --width=600 --height=700 --list \
+                                --text "vEMan - An unofficial VMware® ESX/ESXi Manager for Linux.\n\n\
+vEMan is Open Source and free software!\n\
+Commercial support available: <span foreground='red'>http://www.se-di.de/</span>\n\n\
+<span font_weight='bold'>VM Manager:</span>\tor <span font_weight='bold'>doubleclick</span> opens VM screen\n\
+<span font_weight='bold'>Deploy:</span>\t\t\tlet you deploy an OVF or create a new VM\n\
+<span font_weight='bold'>ESX/ESXi:</span>\t\tlet you do several ESX operations\n\
+<span font_weight='bold'>Refresh:</span>\t\twill enforce a refresh of this window\n" \
                                 --column="State":IMG \
                                 --column="Detected VMs on $SRV" \
                                 --button="Deploy":1 \

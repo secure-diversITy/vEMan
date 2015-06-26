@@ -12,7 +12,8 @@ F_DEPLOVF()
 
 	echo "DEBUG: Set to initial values"
         while [ -z "$OVFSRC" ]||[ -z "$OVFNET" ]||[ -z "$OVFDS" ]||[ "$ERROVF1" -eq "-1" ];do
-                OVFCFG=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Deploy OVF/VMX)" --width=650 --form --item-separator="|" \
+                OVFCFG=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy OVF/VMX)" --width=650 --form --item-separator="|" \
+                                --text "OVF / VMX deployment" \
                                 --field="OVF/VMX source (type in URL or browse to local file)":SFL "$LASTSOURCE" \
                                 --field="Target ESX server":SFL "$SRV" \
                                 --field="Target 'Network Name'":CBE "$NETS" \
@@ -58,12 +59,13 @@ F_DEPLOVF()
 
         YANS=0
         while [ -z "$OVFNM" ]||[ -z "$OVFHDD" ];do
-        OVFPROP=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Configure OVF)" --width=650  --form --item-separator="#" \
-                        --field="Type in a name for your new VM" "" \
-                        --field="Choose your target disk type\n (thin and thick are valid for ESX(i)/VI only)":CB \
-                                "thin#thick#monolithicSparse#monolithicFlat#twoGbMaxExtentSparse#twoGbMaxExtentFlat#twoGbMaxExtentSparse#streamOptimized" \
-                        --field="Enable console? (recommended)":CHK TRUE \
-                        )
+        OVFPROP=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Configure OVF)" --width=650  --form --item-separator="#" \
+                    --text "OVF / VMX deployment" \
+                    --field="Type in a name for your new VM" "" \
+                    --field="Choose your target disk type\n (thin and thick are valid for ESX(i)/VI only)":CB \
+                            "thin#thick#monolithicSparse#monolithicFlat#twoGbMaxExtentSparse#twoGbMaxExtentFlat#twoGbMaxExtentSparse#streamOptimized" \
+                    --field="Enable console? (recommended)":CHK TRUE \
+                    )
                 if [ $? -eq 1 ];then    
                         F_EXIT 
                 fi              
@@ -100,7 +102,7 @@ F_DEPLOVF()
 	# Another problem when NOT using --machineOutput is that the progress bar will never work!!!!!
 	# Another hint: This all fail in my test when splitting the one line to multiple ones..
         echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL $PWRON --machineOutput \
-                $ACPTEULA "$OVFSRC" $OVFDEST | sed -nu 's/.*rogress:\ \([0-9]\{1\}[0-9]\{0,1\}[0]\{0,1\}\)$/\1/p' | $YAD --center --title="$TITLE (Deploying OVF)" --width=650 --progress --progress-text="Deploying \"${OVFNM}\"" --auto-kill --auto-close
+                $ACPTEULA "$OVFSRC" $OVFDEST | sed -nu 's/.*rogress:\ \([0-9]\{1\}[0-9]\{0,1\}[0]\{0,1\}\)$/\1/p' | $YAD --center --window-icon="$LOGO" --title="$TITLE (Deploying OVF)" --width=650 --progress --progress-text="Deploying \"${OVFNM}\"" --auto-kill --auto-close
 
         # Unfortunately this captures Strg+C only (and even THAT NOT in all cases) - we still need a check for testing if deployment was ok or not..
         if [ $? -ne 0 ];then
@@ -108,7 +110,7 @@ F_DEPLOVF()
         else
                 echo "DEBUG: Deploying OVF/VMX succeeded."
 		MSG=" Deploying \n\n \"${OVFNM}\"\n\n to $SRV ended successfully."
-		$YAD --window-icon="$LOGO" --title="$TITLE (OVF/VMX deployed)" --on-top --center --width=400 --text "$MSG" --button=Close	
+		$YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (OVF/VMX deployed)" --on-top --center --width=400 --text "$MSG" --button=Close	
         	if [ "$OVFVNC" == "TRUE" ];then
                		TARGETVM="$OVFNM"
                 	F_ENABLEVNC

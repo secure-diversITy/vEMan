@@ -1,7 +1,7 @@
 # Placeholder for functions that are planned but not ready yet..
 F_NOTREADY(){
 	F_GETCFG
-	MSG="Sorry but this function is not ready yet. You can place a request on http://vEMan.nethna.de if you want to push that."
+	MSG="Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman/  \nif you want to push that."
 	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button=Close --selectable-labels
 	$PARENTF
 }
