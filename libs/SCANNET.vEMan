@@ -2,7 +2,7 @@
 F_SCANNET(){
 	F_GETCFG
 	unset NETS
-	NETS="$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server \"$SRV\" --fields net |grep -i Networks | sed 's/\:[[:space:]]*/|/g' |cut -d '|' -f2 | sed 's/,[[:space:]]*/|/g' |tr -d '$|')"
+	NETS="$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server \"$SRV\" --fields net |grep -i Networks | sed 's/\:[[:space:]]*/|/g' |cut -d '|' -f2 | sed -e 's/,[[:space:]]*/|/g' -e 's/|$//g')"
 	echo "DEBUG: detected networks: >$NETS<"
 	[ -z "$NETS" ]&& echo "DEBUG: WARNING CANNOT DETECT NETWORKS" && STORES="$LASTNET (unknown)"
 
