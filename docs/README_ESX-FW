@@ -71,13 +71,13 @@ Enable vEMan console (VNC) in VMware ESX(i) 5.1 and all higher versions
 1) Enable SSH in ESX(i) (Open ESX server console and open 'Troubleshooting Options')
 2) copy etc/esxfw.config to your ESX:
 
-	$> scp etc/esxfw.config root@youresxserver:./
+	$> scp etc/esxfw.config root@your-esx-server:./
 	
 3) Login with SSH (user 'root') to the ESX
 4) Enable vEMan console persistent:
 
 	$> cp -a /etc/rc.local.d/local.sh /etc/rc.local.d/local.sh.orig
-	$> cat etc/esxfw.config > /etc/rc.local.d/local.sh
+	$> cat esxfw.config > /etc/rc.local.d/local.sh
 	   (using 'cat' here will keep the correct file permissions)	
 
 5) Test it:
