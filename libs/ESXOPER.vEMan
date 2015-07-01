@@ -68,7 +68,7 @@ __EOPWRCONTENT
                     if [ "x$MAINTENANCE" == "x1" ];then
                         echo "DEBUG: System already in maintenance mode! Thats fine."
                     else
-                        EMSG="WARNING: The ESX $SRV is not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
+                        EMSG="WARNING: The ESX\n\n   $SRV ($SRVDNS)\n\nis not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
                         $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$EMSG" --image dialog-error --button="Cancel":1 --button="maintenance + $DETPOWER":2
                         if [ $? -eq 2 ];then
                             echo "DEBUG: User want me to enter maintenance mode + $DETPOWER."
@@ -77,7 +77,7 @@ __EOPWRCONTENT
                            	MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $DETPOWER + $DETPOWERNEXT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
                         else
                             echo "DEBUG: aborted by user"
-                            exit
+                            PWRID=222
                         fi
                     fi
                 ;;
@@ -87,7 +87,7 @@ __EOPWRCONTENT
                     if [ "x$MAINTENANCE" == "x1" ];then
                         echo "DEBUG: System already in maintenance mode! Thats fine."
                     else
-                        EMSG="WARNING: The ESX $SRV is not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
+                        EMSG="WARNING: The ESX\n\n   $SRV ($SRVDNS)\n\nis not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
                         $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$EMSG" --image dialog-error --button="Cancel":1 --button="maintenance + $DETPOWER":2
                         if [ $? -eq 2 ];then
                             echo "DEBUG: User want me to enter maintenance mode + $DETPOWER."
@@ -96,7 +96,7 @@ __EOPWRCONTENT
                            	MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $DETPOWER + $DETPOWERNEXT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
                         else
                             echo "DEBUG: aborted by user"
-                            exit
+                            PWRID=222
                         fi
                     fi                    
                 ;;
