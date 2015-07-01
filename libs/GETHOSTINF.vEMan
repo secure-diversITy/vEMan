@@ -14,22 +14,28 @@ F_GETHOSTINF()
     else
         # parsing the fetched values:
         SRVDNS=$($PYPARS --readxml -x $XMLESX -m xmltag -t HostName|tr -d "[[:space:]]")
-        [ -z $SRVDNS ] && F_MSG "ERROR" "while fetching ESX dns name! This can result in strange behaviour."
+        [ -z "$SRVDNS" ] && F_MSG "ERROR" "while fetching ESX dns name! This can result in strange behaviour."
+        echo "DEBUG: SRVDNS is $SRVDNS"
         
         MAXCPUCOUNT=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
-        [ -z $MAXCPUCOUNT ] && F_MSG "ERROR" "while fetching ESX CPU count! This can result in strange behaviour." 
+        [ -z "$MAXCPUCOUNT" ] && F_MSG "ERROR" "while fetching ESX CPU count! This can result in strange behaviour."
+        echo "DEBUG: MAXCPUCOUNT is $MAXCPUCOUNT"
     
         PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
-        [ -z $PHYMEM ] && F_MSG "ERROR" "while fetching ESX physical memory! This can result in strange behaviour." 
+        [ -z "$PHYMEM" ] && F_MSG "ERROR" "while fetching ESX physical memory! This can result in strange behaviour."
+        echo "DEBUG: PHYMEM is $PHYMEM"
     
         USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
-        [ -z $USEDMEM ] && F_MSG "ERROR""while fetching ESX used memory! This can result in strange behaviour." 
+        [ -z "$USEDMEM" ] && F_MSG "ERROR""while fetching ESX used memory! This can result in strange behaviour."
+        echo "DEBUG: USEDMEM is $USEDMEM"
     
         MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
-        [ -z $MAXMEM ] && F_MSG "ERROR" "while calculating ESX available max memory! This can result in strange behaviour." 
+        [ -z "$MAXMEM" ] && F_MSG "ERROR" "while calculating ESX available max memory! This can result in strange behaviour."
+        echo "DEBUG: MAXMEM is $MAXMEM"
         
         MAINTENANCE=$($PYPARS --readxml -x $XMLESX -m xmltag -t MaintenanceMode)
-        [ -z $MAINTENANCE ] && F_MSG "ERROR""while fetching ESX maintenance mode! This can result in strange behaviour."
+        [ -z "$MAINTENANCE" ] && F_MSG "ERROR""while fetching ESX maintenance mode! This can result in strange behaviour."
+        echo "DEBUG: MAINTENANCE is $MAINTENANCE"
     fi
 }
 export -f F_GETHOSTINF

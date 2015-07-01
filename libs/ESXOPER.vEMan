@@ -4,7 +4,12 @@ F_ESXOPER()
     F_GETCFG
 	F_PARENTF F_HOSTMGR
     unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER DETPOWERNEXT
-	SRVDNS=$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server "$SRV" --machinereadable --fields hostname --machinereadable |grep -v "Host Name")
+    echo 100 >> $PRGRSFILE
+    echo 1 > $PRGRSFILE
+    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Preparing)" --width=650 --progress --progress-text="Fetching live info..." --auto-kill --auto-close &
+    echo 50 >> $PRGRSFILE
+    F_GETHOSTINF
+    echo 100 >> $PRGRSFILE
     if [ -z "$SRV" ]||[ -z "$SRVDNS" ];then
             echo "DEBUG: ERROR: No ESX host!"
             MSG="ERROR: No ESX server specified (logged in: $SRV,result from ESX: $SRVDNS)?! This should not occur. Please try again\n"
@@ -15,10 +20,9 @@ F_ESXOPER()
 
     while [ -z "$PWRANS" ]|| [ -z "$PWRID" ];do
 
-    # create the selection options
-    # the format is:
-    # \\n <short name> \\n <description> \\n <numeric unique id> \\n \
-
+        # create the selection options
+        # the format is:
+        # \\n <short name> \\n <description> \\n <numeric unique id> \\n \
 		read -r PWRCONTENT << __EOPWRCONTENT
 \\nEnter Maintenance\\nEnter maintenance mode. You need to do this before reboot/halt ESX too.\\n1\\n\
 \\nExit Maintenance\\nExit maintenance mode.\\n2\\n\
@@ -64,7 +68,6 @@ __EOPWRCONTENT
                 ;;
                 3) # suspend
                     DETPOWER=reboot
-                    F_GETHOSTINF
                     if [ "x$MAINTENANCE" == "x1" ];then
                         echo "DEBUG: System already in maintenance mode! Thats fine."
                     else
@@ -83,7 +86,6 @@ __EOPWRCONTENT
                 ;;
                 4) # reset
                     DETPOWER=shutdown
-                    F_GETHOSTINF
                     if [ "x$MAINTENANCE" == "x1" ];then
                         echo "DEBUG: System already in maintenance mode! Thats fine."
                     else
@@ -113,17 +115,42 @@ __EOPWRCONTENT
                                           |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $DETPOWER" --pulsate --auto-close)\
                                           | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $DETPOWER" --button=OK
                     if [ ! -z $DETPOWERNEXT ];then
+                        echo 100 >> $PRGRSFILE
+                        echo 1 > $PRGRSFILE
+                        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Preparing)" --width=650 --progress --progress-text="Preparing next step..." --auto-kill --auto-close &
+                        echo 50 >> $PRGRSFILE
+                        # we need to wait to be able to fetch a hopefully changed maintenance mode state
+                        sleep 5s
+                        echo 70 >> $PRGRSFILE
                         F_GETHOSTINF
+                        echo 100 >> $PRGRSFILE
                         if [ "x$MAINTENANCE" == "x1" ];then
                             echo "DEBUG: System REALLY in maintenance mode! Thats fine."
                             https_proxy="" $XHOSTOPS --sessionfile $AUTHSESS --server "$SRV" --target_host "$SRVDNS" --operation "$DETPOWERNEXT" \
                                           |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $DETPOWERNEXT" --pulsate --auto-close)\
                                           | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $DETPOWERNEXT" --button=OK
+                            DETPOWER=$DETPOWERNEXT
                         else
                             F_MSG "ERROR" "Oh that shouldn't happen! I tried to $DETPOWERNEXT but it seems it hasn't worked as expected because maintenance mode still not active. ABORTED. Please try again and check logs."
-                            exit
                         fi
                     fi
+                    case "$DETPOWER" in
+                        reboot|shutdown)
+                            echo "DEBUG: offer to close vEMan because of $DETPOWER"
+                            MSG="You have selected to\n\n $DETPOWER\n\nSo you should close vEMan now or reconnect.\n"
+                            $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Whats next?)" --on-top --center --text "$MSG" --button="Close":1 --button="Re-Login":2
+                            if [ $? -eq 2 ];then
+                                echo "DEBUG: user requested reconnecting because of $DETPOWER"
+                                F_LOGIN
+                            else
+                                echo "DEBUG: user requested closing ($?) because of $DETPOWER"
+                                F_EXIT
+                            fi
+                        ;;
+                        *)
+                        echo "DEBUG: no offer to close vEMan because of $DETPOWER"
+                        ;;
+                    esac
 				else
 					MSG="$ABMSG"
 					$YAD --window-icon="$LOGO" --title="$TITLE (aborted)" --on-top --center --text "$MSG" --button="OK"
