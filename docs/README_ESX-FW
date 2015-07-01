@@ -69,90 +69,23 @@ Enable vEMan console (VNC) in VMware ESX(i) 5.1 and all higher versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1) Enable SSH in ESX(i) (Open ESX server console and open 'Troubleshooting Options')
-2) Login with SSH and as user 'root' to the ESX
-3) Enable vEMan console persistent:
+2) copy etc/esxfw.config to your ESX:
 
-	$> cp /etc/rc.local.d/local.sh /etc/rc.local.d/local.sh.orig
+	$> scp etc/esxfw.config root@youresxserver:./
 	
-	now copy the whole following block until and including EOFIMPORT. Do not be scared about
-	the several blank new lines between - they are there because the esx console may loose them
-	while pasting in. you can remove them later directly in the file if you like but you don't
-	need to:
-############## copy from the next line ######################
-cat > /etc/rc.local.d/local.sh << "EOFIMPORT"
-#!/bin/sh
-# local configuration options
-# Note: modify at your own risk!  If you do/use anything in this
-# script that is not part of a stable API (relying on files to be in
-# specific places, specific tools, specific output, etc) there is a
-# possibility you will end up with a broken system after patching or
-# upgrading.  Changes are not supported unless under direction of
-# VMware support.
+3) Login with SSH (user 'root') to the ESX
+4) Enable vEMan console persistent:
 
-#----> vEMan VNC console <----#
-cat > /etc/vmware/firewall/enablevnc.xml <<"__EOFVNC"
+	$> cp -a /etc/rc.local.d/local.sh /etc/rc.local.d/local.sh.orig
+	$> cat etc/esxfw.config > /etc/rc.local.d/local.sh
+	   (using 'cat' here will keep the correct file permissions)	
 
-<!-- Firewall configuration information -->                         
-
-<ConfigRoot>                                                        
-
- <!-- vEMan-Console -->
-
-  <service id="1000">
-
-  <id>vEMan-Console</id>
-
-    <rule id='0000'>
-
-      <direction>inbound</direction>
-
-      <protocol>tcp</protocol>
-
-      <porttype>dst</porttype>
-
-      <port>
-
-          <begin>5900</begin>
-
-          <end>5999</end>
-
-      </port>
-
-    </rule>
-
-    <enabled>true</enabled>
-
-    <required>false</required>
-
-   </service>
-
-</ConfigRoot>
-
-
-__EOFVNC
-
-
-# We need a short sleep to make sure firewall reload works:
-
-echo 'Activating custom ruleset..' && sleep 3s && esxcli network firewall unload && esxcli network firewall load && echo 'Activating ended successfully..'
-
-
-#----> vEMan VNC console <----#
-
-
-exit 0
-
-
-EOFIMPORT
-
-############## COPY UNTIL THE ABOVE LINE ######################
-	
-4) Test it:
+5) Test it:
 	$> sh /etc/rc.local.d/local.sh && esxcli network firewall ruleset list |grep -i vEMan
 	^^^^^^
 	-> should display "vEMan-Console true" and vEMan console should work as expected now!
 
-5) Reboot the esx to check persistence 
+6) Reboot the esx to check persistence 
 	After rebooted, check it by logging in as root (SSH) again and execute:
 	$> esxcli network firewall ruleset list |grep -i vEMan
 	^^

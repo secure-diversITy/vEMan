@@ -17,7 +17,7 @@ F_OPENCONSOLE()
 		else
 			echo "DEBUG: Warning: Detected ESX 5.1 or higher"
 			if [ ! -f "$FWWARN" ];then
-				F_MSG "WARNING: \nDetected an ESX 5.1 or higher!\n\nYou have to add Firewall rules in ESX.\nThe following guide can be found here:\n\n  $ESXFWREAD\n\nThis warning will be displayed only once (for each ESX)!"
+				F_MSG "WARNING: \nDetected an ESX 5.1 or higher!\n\nYou have to add a Firewall rule in ESX.\nThe following guide can be found here:\n\n  $ESXFWREAD\n\nThis warning will be displayed only once (for each ESX)!"
 				$YAD --image-on-top --window-icon="$LOGO" --title="$TITLE (ESX Firewall)" --width=1000 --height=800 \
                                 	--center --wrap --text-info \
                                 	--button="Done":33 \
