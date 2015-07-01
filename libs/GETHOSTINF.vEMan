@@ -8,23 +8,28 @@ F_GETHOSTINF()
     [ -f $XMLESX ]&& rm -vf $XMLESX && echo "DEBUG: deleted old $XMLESX..."
     
     # Fetching ESX infos we need for validation
-    https_proxy="" $XHOSTINF --server $SRV --sessionfile $AUTHSESS --fields hostname,memoryusage,memorysize,cpucores --machinereadable --fileoutput $XMLESX
-    [ $? -ne 0 ] && F_MSG "ERROR" "while fetching ESX data for validation..ABORTED." && exit
-
-    # parsing the fetched values:
-    SRVDNS=$($PYPARS --readxml -x $XMLESX -m xmltag -t HostName)
-    [ -z $SRVDNS ] && F_MSG "ERROR" "while fetching ESX dns name! ABORTED." && exit
+    https_proxy="" $XHOSTINF --server $SRV --sessionfile $AUTHSESS --fields hostname,memoryusage,memorysize,cpucores,maintenancemode --machinereadable --fileoutput $XMLESX
+    if [ $? -ne 0 ];then
+        F_MSG "ERROR" "while fetching ESX data for validation..This WILL result in strange behaviour!! Please reconnect and/or check vEMan logs."
+    else
+        # parsing the fetched values:
+        SRVDNS=$($PYPARS --readxml -x $XMLESX -m xmltag -t HostName|tr -d "[[:space:]]")
+        [ -z $SRVDNS ] && F_MSG "ERROR" "while fetching ESX dns name! This can result in strange behaviour."
+        
+        MAXCPUCOUNT=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+        [ -z $MAXCPUCOUNT ] && F_MSG "ERROR" "while fetching ESX CPU count! This can result in strange behaviour." 
     
-    MAXCPUCOUNT=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
-    [ -z $MAXCPUCOUNT ] && F_MSG "ERROR" "while fetching ESX CPU count! ABORTED." && exit
-
-    PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
-    [ -z $PHYMEM ] && F_MSG "ERROR" "while fetching ESX physical memory! ABORTED." && exit
-
-    USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
-    [ -z $USEDMEM ] && F_MSG "ERROR""while fetching ESX used memory! ABORTED." && exit
-
-    MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
-    [ -z $MAXMEM ] && F_MSG "ERROR" "while calculating ESX available max memory! ABORTED." && exit
+        PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
+        [ -z $PHYMEM ] && F_MSG "ERROR" "while fetching ESX physical memory! This can result in strange behaviour." 
+    
+        USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
+        [ -z $USEDMEM ] && F_MSG "ERROR""while fetching ESX used memory! This can result in strange behaviour." 
+    
+        MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
+        [ -z $MAXMEM ] && F_MSG "ERROR" "while calculating ESX available max memory! This can result in strange behaviour." 
+        
+        MAINTENANCE=$($PYPARS --readxml -x $XMLESX -m xmltag -t MaintenanceMode)
+        [ -z $MAINTENANCE ] && F_MSG "ERROR""while fetching ESX maintenance mode! This can result in strange behaviour."
+    fi
 }
 export -f F_GETHOSTINF

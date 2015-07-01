@@ -1,23 +1,23 @@
 # Manage mode (shutdown, maintenance, reboot, ...)
 F_ESXOPER()
 {
-        F_GETCFG
+    F_GETCFG
 	F_PARENTF F_HOSTMGR
-        unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER
+    unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER DETPOWERNEXT
 	SRVDNS=$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server "$SRV" --machinereadable --fields hostname --machinereadable |grep -v "Host Name")
-        if [ -z "$SRV" ]||[ -z "$SRVDNS" ];then
-                echo "DEBUG: ERROR: No ESX host!"
-                MSG="ERROR: No ESX server specified (logged in: $SRV,result from ESX: $SRVDNS)?! This should not occur. Please try again\n"
-                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
-                F_ESXMGR
-        fi
+    if [ -z "$SRV" ]||[ -z "$SRVDNS" ];then
+            echo "DEBUG: ERROR: No ESX host!"
+            MSG="ERROR: No ESX server specified (logged in: $SRV,result from ESX: $SRVDNS)?! This should not occur. Please try again\n"
+            $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+            F_ESXMGR
+    fi
 	echo "DEBUG: detected ESX hostname: $SRVDNS"
 
-        while [ -z "$PWRANS" ]|| [ -z "$PWRID" ];do
+    while [ -z "$PWRANS" ]|| [ -z "$PWRID" ];do
 
-		# create the selection options
-		# the format is:
-		# \\n <short name> \\n <description> \\n <numeric unique id> \\n \
+    # create the selection options
+    # the format is:
+    # \\n <short name> \\n <description> \\n <numeric unique id> \\n \
 
 		read -r PWRCONTENT << __EOPWRCONTENT
 \\nEnter Maintenance\\nEnter maintenance mode. You need to do this before reboot/halt ESX too.\\n1\\n\
@@ -47,32 +47,63 @@ __EOPWRCONTENT
 
                 # if user aborts or clicking on cancel button we set the PWRANS manually
                 # (we could also use break here but .. well there are so many ways..
-                if [ $ERRACT -eq 252 ]||[ $ERRACT -eq 222 ];then
-                        PWRANS=1
+        if [ $ERRACT -eq 252 ]||[ $ERRACT -eq 222 ];then
+            PWRANS=1
 			PWRID=222
 			echo "DEBUG: power dialog canceled by user without selecting any action"
-                else
-	
-			MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $PWRSHORT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
+        else
+        	MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $PWRSHORT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
 			ABMSG=" Skipping action because aborted by user. "
 
 			case $PWRID in
-                           1) # start/resume
-				DETPOWER=enter_maintenance
-                           ;;
-                           2) # power off
-                        	DETPOWER=exit_maintenance
-		  	   ;;
-                           3) # suspend
-                                DETPOWER=reboot
-                           ;;
-                           4) # reset
-                                DETPOWER=shutdown
-                           ;;
-			   *) # nothing selected
-				MSG="ERROR: You haven't selected an action. Please try again\n"
-        	        	$YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Try again"
-			   ;;
+                1) # start/resume
+                    DETPOWER=enter_maintenance
+                ;;
+                2) # power off
+                    DETPOWER=exit_maintenance
+                ;;
+                3) # suspend
+                    DETPOWER=reboot
+                    F_GETHOSTINF
+                    if [ "x$MAINTENANCE" == "x1" ];then
+                        echo "DEBUG: System already in maintenance mode! Thats fine."
+                    else
+                        EMSG="WARNING: The ESX $SRV is not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
+                        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$EMSG" --image dialog-error --button="Cancel":1 --button="maintenance + $DETPOWER":2
+                        if [ $? -eq 2 ];then
+                            echo "DEBUG: User want me to enter maintenance mode + $DETPOWER."
+                            DETPOWERNEXT=$DETPOWER
+                            DETPOWER=enter_maintenance
+                           	MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $DETPOWER + $DETPOWERNEXT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
+                        else
+                            echo "DEBUG: aborted by user"
+                            exit
+                        fi
+                    fi
+                ;;
+                4) # reset
+                    DETPOWER=shutdown
+                    F_GETHOSTINF
+                    if [ "x$MAINTENANCE" == "x1" ];then
+                        echo "DEBUG: System already in maintenance mode! Thats fine."
+                    else
+                        EMSG="WARNING: The ESX $SRV is not in maintenance mode yet!\n\nIn order to $DETPOWER you need to change into maintenance mode first.\n\nShould we enable the maintenance mode now?"
+                        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$EMSG" --image dialog-error --button="Cancel":1 --button="maintenance + $DETPOWER":2
+                        if [ $? -eq 2 ];then
+                            echo "DEBUG: User want me to enter maintenance mode + $DETPOWER."
+                            DETPOWERNEXT=$DETPOWER
+                            DETPOWER=enter_maintenance
+                           	MSG="Please verify the following:\n\n        Target = $SRV ($SRVDNS)\n        Action = $DETPOWER + $DETPOWERNEXT\n\nDo you REALLY want to do this for $SRVDNS now?\n\n"
+                        else
+                            echo "DEBUG: aborted by user"
+                            exit
+                        fi
+                    fi                    
+                ;;
+                *) # nothing selected
+                    MSG="ERROR: You haven't selected an action. Please try again\n"
+                    $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Try again"
+                ;;
 			esac
 			
 			if [ "$PWRID" -ne 222 ]||[ -z "$DETPOWER" ];then
@@ -81,7 +112,18 @@ __EOPWRCONTENT
 					https_proxy="" $XHOSTOPS --sessionfile $AUTHSESS --server "$SRV" --target_host "$SRVDNS" --operation "$DETPOWER" \
                                           |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $DETPOWER" --pulsate --auto-close)\
                                           | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $DETPOWER" --button=OK
-
+                    if [ ! -z $DETPOWERNEXT ];then
+                        F_GETHOSTINF
+                        if [ "x$MAINTENANCE" == "x1" ];then
+                            echo "DEBUG: System REALLY in maintenance mode! Thats fine."
+                            https_proxy="" $XHOSTOPS --sessionfile $AUTHSESS --server "$SRV" --target_host "$SRVDNS" --operation "$DETPOWERNEXT" \
+                                          |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "changing state to $DETPOWERNEXT" --pulsate --auto-close)\
+                                          | $YAD --window-icon="$LOGO" --title="$TITLE (Power Manager)" --center --height 200 --width 1000 --list --column "Result of action $DETPOWERNEXT" --button=OK
+                        else
+                            F_MSG "ERROR" "Oh that shouldn't happen! I tried to $DETPOWERNEXT but it seems it hasn't worked as expected because maintenance mode still not active. ABORTED. Please try again and check logs."
+                            exit
+                        fi
+                    fi
 				else
 					MSG="$ABMSG"
 					$YAD --window-icon="$LOGO" --title="$TITLE (aborted)" --on-top --center --text "$MSG" --button="OK"
@@ -91,7 +133,7 @@ __EOPWRCONTENT
 				echo "DEBUG: skipping action $DETPOWER because aborted by user or action cannot be determined"
 			fi
 		fi				
-        done
+    done
 	F_HOSTMGR
 }
 export -f F_ESXOPER

@@ -49,7 +49,7 @@ it survives even a reboot and screen resolution changes.\n\n\
 
 		case "$CANS" in
 			11) # open
-                		TARGETVM="$TARGETVM" $VLIBFNC F_OPENCONSOLE
+                TARGETVM="$TARGETVM" $VLIBFNC F_OPENCONSOLE
 				echo " DEBUG: CANS is $CANS"
 			;;
 			22) # force enable
