@@ -196,7 +196,7 @@ F_VMEDITOR()
 
     echo 100 >> $PRGRSFILE
     COMPPRE=($(cat $YADREST |tr "\n" "|"))
-    EDITANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=600 --form \
+    EDITANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=600 --form --item-separator="|"\
             --text "Edit the settings you want to change only:\n" \
             --field="Selected system":RO \
             --field="$RAMSIZEMAP":NUM \

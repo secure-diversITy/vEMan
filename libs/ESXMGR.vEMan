@@ -24,7 +24,7 @@ F_ESXMGR()
 vEMan is Open Source and free software!\n\
 Commercial support available: <span foreground='red'>http://www.se-di.de/</span>\n\n\
 <span font_weight='bold'>VM Manager:</span>\tor <span font_weight='bold'>doubleclick</span> opens VM screen\n\
-<span font_weight='bold'>Deploy:</span>\t\t\tlet you deploy an OVF or create a new VM\n\
+<span font_weight='bold'>Deploy:</span>\t\t\tlet you deploy OVA/OVF or create a VM\n\
 <span font_weight='bold'>ESX/ESXi:</span>\t\tlet you do several ESX operations\n\
 <span font_weight='bold'>Refresh:</span>\t\twill enforce a refresh of this window\n" \
                                 --column="State":IMG \

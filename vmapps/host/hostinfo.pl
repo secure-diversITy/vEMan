@@ -282,7 +282,7 @@ sub get_host_info {
 					#if ($nettype eq 'virtualMachine') {
 					  my $netname = $netport->name;
 					  push(@netlist,"$netname" . ",");
-					  print("\nArray:" . "@netlist" . "\n");
+					  #print("\nArray:" . "@netlist" . "\n");
 					  #Util::trace(0, "\nResult:" . $nettype . " , " . $netname);
 					#}
          			}
