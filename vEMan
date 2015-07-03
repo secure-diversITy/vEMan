@@ -372,15 +372,19 @@ export -f F_SAYHELLO
 F_ENC()
 {
 	if [ ! -z "$PASS" ];then
-		HASHPW=$(echo -n "$PASS" | $XOPENSSL enc -aes-256-cbc -a -salt -pass pass:${SALTPW})
-		if  [ ! -z "$HASHPW" ];then
-			#export HASHPW
-			unset PASS DPASS
-		else
-			echo "DEBUG: ERROR - while hashing the password.."
-			$VLIBFNC F_ERR "ERROR while hashing the password"
-		fi
-
+        if [ -z "$SALTPW" ];then
+            F_ERR "Please check the var SALTPW in uservars_vEMan.cfg! It seems to be empty! ABORTED."
+            F_EXIT
+        else
+            HASHPW=$(echo -n "$PASS" | $XOPENSSL enc -aes-256-cbc -a -salt -pass pass:${SALTPW})
+            if  [ ! -z "$HASHPW" ];then
+                #export HASHPW
+                unset PASS DPASS
+            else
+                echo "DEBUG: ERROR - while hashing the password.."
+                $VLIBFNC F_ERR "ERROR while hashing the password"
+            fi
+        fi
 	else
 		echo "DEBUG: ERROR - password var is empty.."
 		$VLIBFNC F_ERR "ERROR - Password var is empty"
@@ -393,14 +397,19 @@ export -f F_ENC
 F_DEC()
 {
         if [ ! -z "$HASHPW" ];then
-		echo HASH is $HASHPW
+            if [ -z "$SALTPW" ];then
+                F_ERR "Please check the var SALTPW in uservars_vEMan.cfg! It seems to be empty! ABORTED."
+                F_EXIT
+            else
+                echo HASH is $HASHPW
                 DPASS=$(echo "$HASHPW" | $XOPENSSL enc -aes-256-cbc -d -a -salt -pass pass:${SALTPW})
                 if  [ -z "$DPASS" ];then
                         echo "DEBUG: ERROR - while decrypting hashed password.."
                         $VLIBFNC F_ERR "ERROR while decrypting hashed password"
                 fi
+            fi
         else
-                echo "DEBUG: ERROR - hashed password var is empty.."
+            echo "DEBUG: ERROR - hashed password var is empty.."
         fi
 } 
 
