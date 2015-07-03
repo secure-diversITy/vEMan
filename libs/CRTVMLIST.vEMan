@@ -2,6 +2,8 @@
 # FKA: F_VMSTATE
 F_CRTVMLIST()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         F_GETCFG
         F_DEC
         F_CRTCOOKIE
@@ -172,39 +174,44 @@ F_CRTVMLIST()
         fi
 
         if [ -z "$PR_ONVMS" ];then
-                if [ -z "$PR_OFFVMS" ];then
-			if [ -z "$PR_SLEEPVMS" ];then
-	                        echo "DEBUG: Woops the ESX server is completely empty?"
-        	                PWRLIST=()
-			else
-				echo "DEBUG: oh a tired ESX.. sleeping VMs only.."
-				PWRLIST=(${PR_SLEEPVMS[@]})
-			fi
+            if [ -z "$PR_OFFVMS" ];then
+                if [ -z "$PR_SLEEPVMS" ];then
+                    echo "DEBUG: Woops the ESX server is completely empty?"
+                    PWRLIST=()
                 else
-			if [ -z "$PR_SLEEPVMS" ];then
-	                        echo "DEBUG: No online and no sleeping VMs on your ESX server.."
-                        	PWRLIST=(${PR_OFFVMS[@]})
-			else
-				echo "DEBUG: No online VMs but offline and sleeping ones"
-				PWRLIST=(${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
-			fi
+                    echo "DEBUG: oh a tired ESX.. sleeping VMs only.."
+                    PWRLIST=(${PR_SLEEPVMS[@]})
                 fi
+            else
+                if [ -z "$PR_SLEEPVMS" ];then
+                    echo "DEBUG: No online and no sleeping VMs on your ESX server.."
+                    PWRLIST=(${PR_OFFVMS[@]})
+                else
+                    echo "DEBUG: No online VMs but offline and sleeping ones"
+                    PWRLIST=(${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
+                fi
+            fi
         else
-                if [ -z "$PR_OFFVMS" ];then
-                        echo "DEBUG: cool you have online VMs only.."
-                        PWRLIST=(${PR_ONVMS[@]})
+            if [ -z "$PR_OFFVMS" ];then
+                if [ -z "$PR_SLEEPVMS" ];then
+                    echo "DEBUG: cool you have online VMs only.."
+                    PWRLIST=(${PR_ONVMS[@]})
                 else
-			if [ -z "$PR_SLEEPVMS" ];then
-	                        echo "DEBUG: building 1 list of online and offline VMs.."
-	                        PWRLIST=(${PR_ONVMS[@]}\\n${PR_OFFVMS[@]})
-			else
-				echo "DEBUG: building 1 list of online, suspended and offline VMs.."
-				PWRLIST=(${PR_ONVMS[@]}\\n${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
-			fi
+                    echo "DEBUG: some online and some tired VMs..."
+                    echo "DEBUG: building 1 list of online and suspended VMs.."
+                    PWRLIST=(${PR_ONVMS[@]}\\n${PR_SLEEPVMS[@]})
                 fi
+            else
+                if [ -z "$PR_SLEEPVMS" ];then
+                    echo "DEBUG: building 1 list of online and offline VMs.."
+                    PWRLIST=(${PR_ONVMS[@]}\\n${PR_OFFVMS[@]})
+                else
+                    echo "DEBUG: building 1 list of online, suspended and offline VMs.."
+                    PWRLIST=(${PR_ONVMS[@]}\\n${PR_SLEEPVMS[@]}\\n${PR_OFFVMS[@]})
+                fi
+            fi
         fi
         echo 90 >> $PRGRSFILE
 #       IFS="$SAVEIFS"
 }
-
 export -f F_CRTVMLIST
