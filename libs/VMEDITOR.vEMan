@@ -156,6 +156,8 @@ F_VMEDITOR()
     
     # FIXME:
     # Spaces in Display Name need to be converted to underscores
+    # convert to an unproblematic filename:
+    #PTARGETVM=$(echo $TARGETVM | sed 's/[\ .öüäß\(\)\[\]&%]/_/g')
     EDITANS=($($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=600 --form --item-separator="|"\
             --text "Edit the settings you want to change only:\n" \
             --field="Selected system":RO \
@@ -219,74 +221,99 @@ if [ "$UPLOADNEED" == 1 ];then
     echo "DEBUG: processing $SRCHSTR..."
     grep -i "$SRCHSTR" $LOCNEWVMX > /dev/null
     if [ $? -eq 0 ];then
-      # special validations
-      case "$SRCHSTR" in
-        numvcpus)
-              echo "DEBUG: Reached number of CPU validation..."
-              MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
-              #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
-              echo "DEBUG: cpu count selected: $VALSTR. max cpu count: $MAXCPUNO"
-              if [ "$VALSTR" -gt "$MAXCPUNO" ];then
-                F_MSG "Oops. Unfortunately the number of CPUs seems to be limited to \n         $MAXCPUNO cores.\nYour choice will be adapted accordingly for your convenience."
-                VALSTR="$MAXCPUNO"
-              fi
-              CPUCOUNT="$VALSTR"
-              ;;
-        cpuid.coresPerSocket)
-              echo "DEBUG: Reached number of CPU core per socket validation..."
-              MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
-              #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
-              echo "DEBUG: cpu count selected: $CPUCOUNT and cores per socket: $VALSTR"
-              echo "DEBUG: Lets check if that makes sense..."
-              #ALLOWEDSOCK="$(echo "scale=0; \$CPUCOUNT / \$VALSTR" | bc)"
-              UVALSTR=$VALSTR
-              let CALLOWEDSOCK="$CPUCOUNT/$VALSTR"
-              echo "DEBUG: max allowed by your total cpu count = $CALLOWEDSOCK"
-              if [ $CALLOWEDSOCK == 0 ];then F_MSG "Oops you selected more cores per socket than total cpus available!!\nwill set max core per socket to 1." ; VALSTR=1;fi
-
-              let MALLOWEDSOCK="$MAXCPUNO/$VALSTR"
-              let MALLOWEDSOCCPU="$MALLOWEDSOCK*$VALSTR"
-              echo "DEBUG: max allowed by total available = $MALLOWEDSOCK"
-
-              if [ "$VALSTR" -gt "$CALLOWEDSOCK" ];then
-                F_PARENTF F_VMEDITOR
-                F_MSG "ERROR" "CPU cores per socket (your choice): $UVALSTR\nTotal CPUs (your choice): $CPUCOUNT\nTotal CPUs (max available): $MAXCPUNO\n\nDepending on the current total cpu count (see above) your max allowed core per socket value is $MALLOWEDSOCK (results in a total of $MALLOWEDSOCCPU CPUs).\n\nABORTED.\n\nTry again the calculation is easy:\n\ntotal cpu count ($MAXCPUNO) / your-choice = max cores per socket     \n\n(rounding to 1 digit of course).\n"
-                exit
-              fi
-              ;;              
-        memSize)
-              echo "DEBUG: Reached number of RAM validation..."
-              PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
-              USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
-              MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
-              if [ "$VALSTR" -gt "$MAXMEM" ];then
-                F_MSG "Oops. Unfortunately the size of RAM seems to be limited to \n         $MAXMEM MB.\nYour choice will be adapted accordingly for your convenience."
-                VALSTR="$MAXMEM"
-              fi
-              ;;
-        RemoteDisplay.vnc.enabled)
-              # this will only prepare the console handling not do anything. 
-              # enable/disable console will be done after uploading first.
-              echo "DEBUG: Reached VNC Console validation..."
-              VALSTR=$(echo $VALSTR|tr [[:lower:]] [[:upper:]])
-              if [ "$FMVNCSTATE" != "$VALSTR" ];then
-                  echo "DEBUG: console setting has changed from $FMVNCSTATE to $VALSTR"
-                  if [ "$VALSTR" == "TRUE" ];then
-                      echo "DEBUG: console will be enabled now"
-                      DISABLEC=1
-                  else
-                      echo "DEBUG: console will be disabled now"
-                      DISABLEC=2
-                  fi
-              else
-                  echo "DEBUG: console setting has not changed"
-                  DISABLEC=0
-              fi
-              ;;
-      esac
-      sed -i "s/$SRCHSTR.*/${SRCHSTR}\ =\ \"$VALSTR\"/g" $LOCNEWVMX
+        echo "DEBUG: existing value detected so we will replace instead of add later.."
+        REPLACE=1
     else
-      echo "$USRANS" >> $LOCNEWVMX
+        echo "DEBUG: NO existing value detected so we will add instead of replace later.."
+        REPLACE=0
+    fi
+    # special validations
+    case "$SRCHSTR" in
+      numvcpus)
+            echo "DEBUG: Reached number of CPU validation..."
+            MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+            #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
+            echo "DEBUG: cpu count selected: $VALSTR. max cpu count: $MAXCPUNO"
+            UCPUCOUNT=$VALSTR
+            if [ "$VALSTR" -gt "$MAXCPUNO" ];then
+              F_MSG "Oops.\nUnfortunately the number of CPUs seems to be limited to:\n\n         <span font_weight='bold'>$MAXCPUNO</span> cores\n\nYour choice will be adapted accordingly for your convenience."
+              VALSTR="$MAXCPUNO"
+            fi
+            CPUCOUNT="$VALSTR"
+            ;;
+      cpuid.coresPerSocket)
+            echo "DEBUG: Reached number of CPU core per socket validation..."
+            MAXCPUNO=$($PYPARS --readxml -x $XMLESX -m xmltag -t CPUcores)
+            #MAXCPUNO=$(https_proxy="" $XESXCLI --formatter=keyvalue --sessionfile $AUTHSESS --server=$SRV hardware cpu global get |grep -i Cpu.CPUCores|cut -d"=" -f2)
+            echo "DEBUG: cpu count selected: $CPUCOUNT and cores per socket: $VALSTR"
+            echo "DEBUG: Lets check if that makes sense..."
+            #ALLOWEDSOCK="$(echo "scale=0; \$CPUCOUNT / \$VALSTR" | bc)"
+            UVALSTR=$VALSTR
+            let CALLOWEDSOCK="$CPUCOUNT*$VALSTR"
+            echo "DEBUG: your choice results in a total count of: $CALLOWEDSOCK"
+            if [ "$CALLOWEDSOCK" -gt "$MAXCPUNO" ]||[ "$CALLOWEDSOCK" -eq 0 ];then
+                F_MSG "Oops your selection of $CALLOWEDSOCK CPUs is invalid!!\nwill set max core per socket to 1."
+                VALSTR=1
+                let MALLOWEDSOCK="$MAXCPUNO/$CPUCOUNT"
+                let MALLOWEDSOCCPU="$MALLOWEDSOCK*$CPUCOUNT"
+                echo "DEBUG: max allowed by total available = $MALLOWEDSOCK"
+
+                F_PARENTF F_VMEDITOR
+                [ $UCPUCOUNT -ne $CPUCOUNT ]&&CVALI=" (auto-changed to max possible amount)"
+                F_MSG "ERROR" "<span font_weight='bold'>Your choice:</span>\n\n\
+   CPU cores per socket:\t<span font_weight='bold'>$UVALSTR</span>\n\
+   Total CPUs:\t\t\t<span font_weight='bold'>$UCPUCOUNT</span>\n\
+   Grand total:\t\t\t<span font_weight='bold'>$CALLOWEDSOCK</span>\n\n\
+<span font_weight='bold'>Available on ESX:</span>\n\n\
+   Total CPUs (max):\t\t<span font_weight='bold'>$MAXCPUNO</span>\n\n\
+Depending on the current selected cpu count of: <span font_weight='bold'>${CPUCOUNT}${CVALI}</span>\n\
+your max allowed core per socket value is: <span font_weight='bold'>$MALLOWEDSOCK</span>\n\
+(results in a grand total of <span font_weight='bold'>$MALLOWEDSOCCPU</span> CPUs).\n\nABORTED.\n\n\
+Try again the calculation is easy:\n\n\
+total cpu count ($MAXCPUNO) / your-choice = max cores per socket     \n\n\
+(cut to 1 digit of course. e.g 8/9=0 or 8/5=1)\n"
+                exit
+            fi
+
+            
+            #fi
+            ;;              
+      memSize)
+            echo "DEBUG: Reached number of RAM validation..."
+            PHYMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t PhysicalMemory)
+            USEDMEM=$($PYPARS --readxml -x $XMLESX -m xmltag -t MemoryUsage)
+            MAXMEM=$((${PHYMEM// MB/} - ${USEDMEM// MB/}))
+            if [ "$VALSTR" -gt "$MAXMEM" ];then
+              F_MSG "Oops. Unfortunately the size of RAM seems to be limited to \n         $MAXMEM MB.\nYour choice will be adapted accordingly for your convenience."
+              VALSTR="$MAXMEM"
+            fi
+            ;;
+      RemoteDisplay.vnc.enabled)
+            # this will only prepare the console handling not do anything. 
+            # enable/disable console will be done after uploading first.
+            echo "DEBUG: Reached VNC Console validation..."
+            VALSTR=$(echo $VALSTR|tr [[:lower:]] [[:upper:]])
+            if [ "$FMVNCSTATE" != "$VALSTR" ];then
+                echo "DEBUG: console setting has changed from $FMVNCSTATE to $VALSTR"
+                if [ "$VALSTR" == "TRUE" ];then
+                    echo "DEBUG: console will be enabled now"
+                    DISABLEC=1
+                else
+                    echo "DEBUG: console will be disabled now"
+                    DISABLEC=2
+                fi
+            else
+                echo "DEBUG: console setting has not changed"
+                DISABLEC=0
+            fi
+            ;;
+    esac
+    
+    if [ $REPLACE -eq 0 ];then
+        #echo "$USRANS" >> $LOCNEWVMX
+        echo "$SRCHSTR = \"$VALSTR\"" >> $LOCNEWVMX
+    else
+        sed -i "s/$SRCHSTR.*/${SRCHSTR}\ =\ \"$VALSTR\"/g" $LOCNEWVMX
     fi
   done
   unset LVMX LANS
