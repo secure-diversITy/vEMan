@@ -1,5 +1,8 @@
 # Display the vEMan license
-F_LICENSE(){
+F_LICENSE()
+{
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	echo "DEBUG: Displaying license information"
 
         unset LSELECT LANS

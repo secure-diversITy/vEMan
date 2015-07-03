@@ -1,6 +1,8 @@
 # Delete a VM on the host
 F_DELETEVM()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
 	unset DELANS DELERR
         if [ -z "$TARGETVM" ];then

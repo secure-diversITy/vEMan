@@ -1,6 +1,8 @@
 # Manipulating user settings like password etc
 F_CHGUSR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	MODUSR="$1"
 	if [ -z "$MODUSR" ];then
 		echo "DEBUG: user variable $1, $MODUSR is empty!"

@@ -1,7 +1,9 @@
 # The review/rating popup
 F_REVIEWER()
 {
-        unset REVANS
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    unset REVANS
 
 	RAT_SM="Giving feedback is easy and only 1 click away"
 	RAT_YES="$RAT_SM\n\nPlease click on the following link to rate vEMan:\n(_NO_ login or registration needed, only 1 click more)"

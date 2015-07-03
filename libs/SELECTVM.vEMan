@@ -1,9 +1,11 @@
 # select a VM
 F_SELECTVM()
 {
-        F_GETCFG
-        TARGETVM=$(echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XLISTVM vi://$SRV/ 2>&1| egrep '^\ ' | sed 's/^.\ //g' | sort \
-                        | $YAD --window-icon="$LOGO" --title="vSphere for Linux (VM selection)" --width=600 --height=800 --list --column="VM name" | cut -d "|" -f1)
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
+    TARGETVM=$(echo -e "${VUSER}\n${DPASS}" | all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XLISTVM vi://$SRV/ 2>&1| egrep '^\ ' | sed 's/^.\ //g' | sort \
+                    | $YAD --window-icon="$LOGO" --title="vSphere for Linux (VM selection)" --width=600 --height=800 --list --column="VM name" | cut -d "|" -f1)
 }
 
 export -f F_SELECTVM

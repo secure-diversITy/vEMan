@@ -1,6 +1,8 @@
 # When executed first time we try to install vEMan and the Desktop icon
 F_INSTALLER()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	echo "DEBUG: Start installer.."
 
 	$YAD --image="$LOGO_BIG" --image-on-top --window-icon="$LOGO" --selectable-labels --title="$TITLE (Installer)" --width=700 --on-top --center --text "This installer will OVERWRITE _ALL_ existing files in\n the target directory you will choose in the next step.\n\n So be sure that you create a new folder when upgrading to a newer version and read the UPGRADE guide(s) in\n\n $VPATH/docs" --button "Cancel":1 --button "Choose target directory":22

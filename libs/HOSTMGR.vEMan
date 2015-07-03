@@ -1,6 +1,8 @@
 # this open the ESX host manager
 F_HOSTMGR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
     F_GETCFG
 	F_PARENTF F_HOSTMGR
 	unset HANS

@@ -1,20 +1,22 @@
 # Deploy VMX warning
 F_DEPLVMX()
 {
-        if [ ! -z "$PARENTF" ];then
-                echo "DEBUG: Last function was: $PARENTF"
-        else
-                echo "DEBUG: No parent function defined."
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    if [ ! -z "$PARENTF" ];then
+            echo "DEBUG: Last function was: $PARENTF"
+    else
+            echo "DEBUG: No parent function defined."
 #               PARENTF=F_AUTH
-                PARENTF=F_EXIT
-        fi
-        echo "DEBUG: VMX completely untested but should work the same way as for OVF/OVA"
-        $YAD --window-icon="$LOGO" --title="$TITLE (Deploy VMX - UNTESTED)" --on-top --center --text "VMX deployment is completely untested but should work the same way as for OVA/OVF\nIf you want to try it you can proceed by starting the OVA/OVF wizard" --button "Proceed using OVA/OVF wizard":0  --button=Cancel
-        if [ "$?" -eq 0 ];then
-                F_DEPLOVF
-        else
-                $PARENTF
+            PARENTF=F_EXIT
+    fi
+    echo "DEBUG: VMX completely untested but should work the same way as for OVF/OVA"
+    $YAD --window-icon="$LOGO" --title="$TITLE (Deploy VMX - UNTESTED)" --on-top --center --text "VMX deployment is completely untested but should work the same way as for OVA/OVF\nIf you want to try it you can proceed by starting the OVA/OVF wizard" --button "Proceed using OVA/OVF wizard":0  --button=Cancel
+    if [ "$?" -eq 0 ];then
+            F_DEPLOVF
+    else
+            $PARENTF
 #               F_AUTH
-        fi
+    fi
 }
 export -f F_DEPLVMX

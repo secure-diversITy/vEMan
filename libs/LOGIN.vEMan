@@ -1,6 +1,8 @@
 # The logon pop-up
 F_LOGIN()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         if [ "$SETAV" -eq 1 ];then
                 . $CFG && echo "DEBUG: setting file included successfully"
         fi

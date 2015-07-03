@@ -1,0 +1,53 @@
+# This function will fetch a specific vmx file
+F_FETCHVMX()
+{
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+
+    if [ -z "$TARGETVM" ];then
+        echo " DEBUG: ERROR: No VM host selected?"
+        F_MSG "ERROR" "You haven't selected a target VM. Please try again\n"
+        exit
+    fi
+    
+    if [ -z "$PTARGXML" ];then
+        echo " DEBUG: ERROR: PTARGXML var is missing!!"
+        F_MSG "ERROR" "A required variable (PTARGXML) is missing! ABORTED.\n"
+        exit
+    fi
+    
+    F_GETCFG
+    TARGETVM=$TARGETVM F_GETDCS
+    
+    # fetch the VMX
+    XMLVMPATH=$($PYPARS --readxml -x $PTARGXML -m xmltag -t vmPathName)
+    XMLSTOR=$(echo $XMLVMPATH|cut -d" " -f1|sed 's/\[//g;s/\]//g')
+    XMLVMX=$(echo $XMLVMPATH|cut -d" " -f2)
+
+    #check vars
+    if [ -z "$USEDC" ]||[ -z "$XMLVMX" ]||[ -z "$XMLSTOR" ]||[ -z "$XMLVMPATH" ];then
+        F_MSG "ERROR" "An error occured while getting datacenter info.      \nPlease check logfile at:\n\n $FLOG"
+        exit
+    else
+        echo "DEBUG: TARGETVM $TARGETVM, USEDC $USEDC, XMLVMX $XMLVMX, XMLSTOR $XMLSTOR, XMLVMPATH $XMLVMPATH" 
+    fi
+
+    # the downloaded vmx file - we leave it untouched see next var
+    LOCDLVMX="$VMCDIR/${TARGETVM}.vmx-dl"
+    # the vmx working copy
+    LOCNEWVMX="$VMCDIR/${TARGETVM}.vmx-new"
+    # the vmx we will later on upload
+    LOCUPLVMX="$VMCDIR/${TARGETVM}.vmx-up"
+    # the argument file for yad to workaround stupidness of yad
+    YADREST="$VMCDIR/${TARGETVM}.yadrest"
+    # the ESX info XML
+    XMLESX="$VMCDIR/${TARGETVM}.esxinfo"
+    https_proxy="" $XFILEACC --sessionfile "$AUTHSESS" --server $SRV --datacentername "$USEDC" --operation get --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCDLVMX"
+    if [ $? -ne 0 ];then
+        echo 100 >> $PRGRSFILE
+        F_MSG "ERROR" "An error occured while downloading settings file.      \nPlease check logfile at:\n\n $FLOG"
+        exit
+    fi
+    # backup vmx locally (this will be left untouched)
+    cp -f $LOCDLVMX $LOCNEWVMX
+}
+export -f F_FETCHVMX

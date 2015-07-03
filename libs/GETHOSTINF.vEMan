@@ -1,6 +1,8 @@
 # Fetch ESX host information
 F_GETHOSTINF()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
     F_GETCFG
     
     # the ESX info XML

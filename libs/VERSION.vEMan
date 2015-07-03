@@ -1,6 +1,8 @@
 # show the current version only
 F_VERSION()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+
 	echo "$VERSION"
 }
 

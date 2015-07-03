@@ -1,9 +1,11 @@
 # Deploy OVF and/or VMX
 F_DEPLOVF()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	unset OVFNM VERSRC
-        F_GETCFG
-        ERROVF1="-1"
+    F_GETCFG
+    ERROVF1="-1"
 	[ -z "$LASTNET" ]&& LASTNET="type-in-exact-NETWORK-name"
 	[ -z "$LASTSTORE" ]&& LASTSTORE="type-in-exact-STORAGE-name"
 	
@@ -11,33 +13,31 @@ F_DEPLOVF()
 	F_SCANNET
 
 	echo "DEBUG: Set to initial values"
-        while [ -z "$OVFSRC" ]||[ -z "$OVFNET" ]||[ -z "$OVFDS" ]||[ "$ERROVF1" -eq "-1" ];do
-                OVFCFG=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy OVA/OVF/VMX)" --width=850 --form --item-separator="|" \
-                                --text "OVA/OVF/VMX deployment" \
-                                --field="OVA/OVF/VMX source (type in URL or browse to local file)":SFL "$LASTSOURCE" \
-                                --field="Target ESX server":SFL "$SRV" \
-                                --field="Target 'Network Name'":CBE "$NETS" \
-                                --field="Target 'Data Storage'":CBE "$STORES" \
-                                --field="Autoaccept EULA":RO "EULA will be AUTO-accepted" \
-                                --field="Power on after deployed":CHK \
-                                --always-print-result)
-                ERROVF1="$?"
-                echo "DEBUG: OVFCFG exit result was: $ERROVF1"
-                if [ "$ERROVF1" -eq 1 ]||[ "$ERROVF1" -eq 252 ];then
-                        F_EXIT
-                fi              
+    while [ -z "$OVFSRC" ]||[ -z "$OVFNET" ]||[ -z "$OVFDS" ]||[ "$ERROVF1" -eq "-1" ];do
+            OVFCFG=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Deploy OVA/OVF/VMX)" --width=850 --form --item-separator="|" \
+                            --text "OVA/OVF/VMX deployment" \
+                            --field="OVA/OVF/VMX source (type in URL or browse to local file)":SFL "$LASTSOURCE" \
+                            --field="Target ESX server":SFL "$SRV" \
+                            --field="Target 'Network Name'":CBE "$NETS" \
+                            --field="Target 'Data Storage'":CBE "$STORES" \
+                            --field="Autoaccept EULA":RO "EULA will be AUTO-accepted" \
+                            --field="Power on after deployed":CHK \
+                            --always-print-result)
+            ERROVF1="$?"
+            echo "DEBUG: OVFCFG exit result was: $ERROVF1"
+            if [ "$ERROVF1" -eq 1 ]||[ "$ERROVF1" -eq 252 ];then
+                    F_EXIT
+            fi              
 
-                OVFSRC=$(echo "$OVFCFG" | cut -d "|" -f 1)
-                OVFDEST=$(echo "$OVFCFG" | cut -d "|" -f 2)
-                OVFNET="$(echo \"$OVFCFG\" | cut -d '|' -f 3)"
-                OVFDS=$(echo "$OVFCFG" | cut -d "|" -f 4| cut -d "(" -f1)
-                OVFEULA=$(echo "$OVFCFG" | cut -d "|" -f 5)
-                OVFPWR=$(echo "$OVFCFG" | cut -d "|" -f 6)
+            OVFSRC=$(echo "$OVFCFG" | cut -d "|" -f 1)
+            OVFDEST=$(echo "$OVFCFG" | cut -d "|" -f 2)
+            OVFNET="$(echo \"$OVFCFG\" | cut -d '|' -f 3)"
+            OVFDS=$(echo "$OVFCFG" | cut -d "|" -f 4| cut -d "(" -f1)
+            OVFEULA=$(echo "$OVFCFG" | cut -d "|" -f 5)
+            OVFPWR=$(echo "$OVFCFG" | cut -d "|" -f 6)
+    done
         
-		
-        done
-        
-        echo "DEBUG: $OVFSRC , $OVFDEST , $OVFNET , $OVFDS , $OVFEULA , $OVFPWR"
+    echo "DEBUG: $OVFSRC , $OVFDEST , $OVFNET , $OVFDS , $OVFEULA , $OVFPWR"
 
 	# save the current entered values into server specific settings file
 	F_SAVEOVFSET

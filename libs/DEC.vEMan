@@ -1,17 +1,19 @@
 # we decrypt the hashed pw here again for further use
 F_DEC()
 {
-        if [ ! -z "$HASHPW" ];then
-                echo HASH is $HASHPW
-                DPASS=$(echo "$HASHPW" | $XOPENSSL enc -aes-256-cbc -d -a -salt -pass pass:${SALTPW})
-                if  [ -z "$DPASS" ];then
-                        echo "DEBUG: ERROR - while decrypting hashed password.."
-                        F_ERR "ERROR while decrypting hashed password"
-                fi
-        else
-                echo "DEBUG: ERROR - hashed password var is empty.."
-                F_ERR "ERROR - hashed password var is empty.."
-        fi
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    if [ ! -z "$HASHPW" ];then
+            echo HASH is $HASHPW
+            DPASS=$(echo "$HASHPW" | $XOPENSSL enc -aes-256-cbc -d -a -salt -pass pass:${SALTPW})
+            if  [ -z "$DPASS" ];then
+                    echo "DEBUG: ERROR - while decrypting hashed password.."
+                    F_ERR "ERROR while decrypting hashed password"
+            fi
+    else
+            echo "DEBUG: ERROR - hashed password var is empty.."
+            F_ERR "ERROR - hashed password var is empty.."
+    fi
 }
 
 export -f F_DEC

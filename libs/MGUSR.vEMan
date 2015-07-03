@@ -1,7 +1,9 @@
 # Manage users on an ESX/i
 F_MGUSR()
 {
-        F_GETCFG
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
 
 	unset ROFORM NEWUSR
 

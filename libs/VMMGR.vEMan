@@ -1,7 +1,9 @@
 # this will handle all VM specific operations
 F_VMMGR()
 {
-        echo "DEBUG: open VM MAnager.."
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+        echo "DEBUG: open VM Manager.."
         F_GETCFG
         if [ -z "$TARGETVM" ];then
                 echo " DEBUG: ERROR: No VM host selected?"
@@ -39,7 +41,7 @@ F_VMMGR()
 
                         INFANS=$(echo -e "$XMLOUT" |$YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (VM Manager)" --center --height 600 --width 600 --list --column "Type" --column "Output" --always-print-result\
                                   --text "Live data for your selected VM: $TARGETVM\n\nDoubleclick anywhere or on 'Edit' will open the VM editor.\n" \
-                                  --button="Console":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_CONSOLEMGR'" \
+                                  --button="Console":"bash -c 'TARGETVM=$TARGETVM PTARGXML=$PTARGXML $VLIBFNC F_CONSOLEMGR'" \
                                   --button="Power":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_POWER'"\
                                   --button="Snapshots":"bash -c 'TARGETVM=$TARGETVM $VLIBFNC F_SNAPMGR'"\
                                   --button="Edit":"bash -c 'TARGETVM=$TARGETVM PTARGXML=$PTARGXML $VLIBFNC F_VMEDITOR'"\

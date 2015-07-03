@@ -1,6 +1,8 @@
 #Manage snapshots (view, take, remove, revert to,..)
 F_SNAPMGR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         F_GETCFG
         echo 100 >> $PRGRSFILE.SNAP
         echo 0 > $PRGRSFILE.SNAP

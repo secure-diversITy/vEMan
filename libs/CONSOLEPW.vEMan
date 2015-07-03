@@ -1,32 +1,34 @@
 # manage the console password
 F_CONSOLEPW()
 {
-        F_GETCFG
-        # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
-        echo 100 >> $PRGRSFILE
-        echo 0 > $PRGRSFILE
-        
-        unset VANS CANS CURCONPWSTATE
-        
-        if [ -z "$TARGETVM" ];then
-                echo " DEBUG: ERROR: No VM host selected?"
-                MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
-                $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
-                F_ESXMGR
-        fi
-        
-        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Checking current protection..." --auto-kill --auto-close &
-        echo 10 >> $PRGRSFILE
-        F_GETVMPATH
-        echo 50 >> $PRGRSFILE
-        CURCONPWSTATE=$(https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH getguestinfo RemoteDisplay.vnc.password | grep RemoteDisplay.vnc.password |cut -d"=" -f 2 |tr -d " ")
-        echo "DEBUG: result of pw check was: $?"
-        echo 100 >> $PRGRSFILE
-        #DEBUG CODE:
-        #echo "DEBUG: result of pw check was: $CURCONPWSTATE"
-        
-        while [ -z "$CANS" ];do
-            VANS=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=700 --height=300 --form \
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
+    # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
+    echo 100 >> $PRGRSFILE
+    echo 0 > $PRGRSFILE
+    
+    unset VANS CANS CURCONPWSTATE
+    
+    if [ -z "$TARGETVM" ];then
+            echo " DEBUG: ERROR: No VM host selected?"
+            MSG="ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+            $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+            F_ESXMGR
+    fi
+    
+    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Checking current protection..." --auto-kill --auto-close &
+    echo 10 >> $PRGRSFILE
+    F_GETVMPATH
+    echo 50 >> $PRGRSFILE
+    CURCONPWSTATE=$(https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH getguestinfo RemoteDisplay.vnc.password | grep RemoteDisplay.vnc.password |cut -d"=" -f 2 |tr -d " ")
+    echo "DEBUG: result of pw check was: $?"
+    echo 100 >> $PRGRSFILE
+    #DEBUG CODE:
+    #echo "DEBUG: result of pw check was: $CURCONPWSTATE"
+    
+    while [ -z "$CANS" ];do
+        VANS=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Console Manager)" --width=700 --height=300 --form \
                     --text "This will show you the current state of password protection\n\
 and gives you the option to either protect or remove protection.\n\n\
 Prevent unauthorized access to this console by direct access:\n\
@@ -47,10 +49,10 @@ To avoid that it is highly recommended to protect your console.\n" \
             CANS=$?
             #|VM|||password|
             NEWCONPW=$(echo $VANS|cut -d"|" -f5)
-            # strip the password
-            XXXVANS=$(echo $VANS|cut -d"|" -f1-4)
-            echo "DEBUG: CANS was: $CANS and answer: $XXXVANS (password hidden in output)"
-          
+            
+            # turn on for DEBUGGING ONLY! This will display the password in log!!!
+            #echo "DEBUG: VANS was $VANS"
+            
             # if user aborts or clicking on close button we set the VANS manually
             # (we could also use break here but .. well there are so many ways..
             if [ $CANS -eq 252 ]||[ $CANS -eq 222 ];then
@@ -68,18 +70,59 @@ To avoid that it is highly recommended to protect your console.\n" \
                     TARGETVM="$TARGETVM" F_SETCONPW "$NEWCONPW"
                 ;;
                 22) # remove pw
+                   # check if VM is offline (again)
+                    unset PWRSTATE
+                    F_CHKPWR $TARGETVM
+                    echo "power is: $PWRSTATE"
+                    if [ "x${PWRSTATE}" == "xoff" ];then
+                      echo "DEBUG: going on..."
+                    else
+                      F_MSG "ERROR" "Oops VM state for $TARGETVM is $PWRSTATE. You are allowed to SET protection while the VM is running but REMOVING need a powered off VM (suspend or powered on is not allowed)!\n\nPlease turn the VM off and try again."
+                      exit
+                    fi
                     F_MSG "Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman  \nif you want to push that.\n\nWe will continue but do not expect that anything is working!"     
-                    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Removing protection..." --auto-kill --auto-close &
+                    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Preparing protection removal..." --auto-kill --auto-close &
                     echo 50 >> $PRGRSFILE
                     echo " DEBUG: CANS is $CANS"
-                    https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.password ""
-                    RMVPWRET=$?
+                    echo "DEBUG: Will open TARGETVM=$TARGETVM PTARGXML=\"$PTARGXML\" F_FETCHVMX"
+                    TARGETVM=$TARGETVM PTARGXML="$PTARGXML" F_FETCHVMX
+                    echo 60 >> $PRGRSFILE
+                    echo "DEBUG: we about to do: sed -i '/RemoteDisplay\.vnc\.password.*$/d' \"$LOCNEWVMX\""
+                    sed -i '/RemoteDisplay\.vnc\.password.*$/d' "$LOCNEWVMX"
+                    RMRET=$?
                     echo 100 >> $PRGRSFILE
-                    if [ "$RMVPWRET" -ne 0 ];then
-                        F_MSG "ERROR" "Removing password was not possible (errorcode was: $RMVPWRET).. Please try again.."
-                        exit
+                    if [ "x$RMRET" == "x0" ];then
+                        # validate changed settings
+                        # Must be done by the user.. May changing in the future but atm..
+                        while [ -z "$LANS" ];do
+                            LVMX=$(cat "$LOCNEWVMX" | $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Check VMX)" \
+                                      --center --width=600 --height=800 --text \
+                                      "\nThe following will show you the VMX file we about to upload.\n\nPlease check that it is:\n\n   - not empty\n   - valid\n   - and that 'RemoteDisplay.vnc.password' has been removed.\n\nYou can <span font_weight='bold'>not</span> edit only <span font_weight='bold'>view:</span>\n" \
+                                      --list --column=xml-file --no-headers \
+                                      --button="Upload":33 \
+                                      --button="Cancel":34 \
+                                      --always-print-result)
+                            LANS=$?
+                            echo "DEBUG: selected button id: $LANS"
+                            if [ "$LANS" -eq 252 ]||[ "$LANS" -eq 34 ];then
+                              echo "DEBUG: aborted by user" 
+                              exit
+                            fi
+                        done
+                        echo 70 > $PRGRSFILE
+                        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Removing protection..." --auto-kill --auto-close &
+                        https_proxy="" $XFILEACC --sessionfile $AUTHSESS --server $SRV --datacentername ha-datacenter --operation put --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCNEWVMX"
+                        RMVPWRET=$?
+                        echo 100 >> $PRGRSFILE
+                        if [ "$RMVPWRET" -ne 0 ];then
+                            F_MSG "ERROR" "Removing password was not possible (errorcode was: $RMVPWRET).. Please try again.."
+                            exit
+                        else
+                            F_MSG "Well as you requested: your server console on:\n\n <span font_weight='bold'>$TARGETVM</span>\n\nis totally unprotected now!\n\nEnsure that you disable console or <span font_weight='bold'>everyone</span> could access your server console now.."
+                        fi
                     else
-                        F_MSG "Well as you requested: your server console on:\n\n <span font_weight='bold'>$TARGETVM</span>\n\nis totally unprotected now!\n\nEnsure that you disable console or <span font_weight='bold'>everyone</span> could access your server console now.."
+                        F_MSG "ERROR" "An error occured while modifying the LOCAL(!!) vmx file. Nothing uploaded so don't be scared but you should check vEMan log."
+                        exit
                     fi
                 ;;
                 *) # close pw manager

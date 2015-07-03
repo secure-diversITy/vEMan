@@ -1,23 +1,25 @@
 # the default error handling behaviour
 F_ERR()
 {
-        if [ -z "$1" ];then
-                if [ -z "$ARG1" ];then
-                        MSG="Unspecified error occured ($ARG1)"
-                else
-                        MSG="$ARG1"
-                fi
-        else
-                MSG="$1"
-        fi
-        MSG="${MSG}\nTry to start $TITLE at the commandline to see debug output"
-        $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Retry:0  --button=Cancel
-        if [ $? -eq 0 ];then
-                F_AUTH
-        else
-                echo "DEBUG: aborted by user"
-                F_EXIT
-        fi
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    if [ -z "$1" ];then
+            if [ -z "$ARG1" ];then
+                    MSG="Unspecified error occured ($ARG1)"
+            else
+                    MSG="$ARG1"
+            fi
+    else
+            MSG="$1"
+    fi
+    MSG="${MSG}\nTry to start $TITLE at the commandline to see debug output"
+    $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --selectable-labels --button Retry:0  --button=Cancel
+    if [ $? -eq 0 ];then
+            F_AUTH
+    else
+            echo "DEBUG: aborted by user"
+            F_EXIT
+    fi
 }
 
 export -f F_ERR

@@ -1,8 +1,16 @@
 # this opens the vm editor
 F_VMEDITOR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    if [ -z "$TARGETVM" ];then
+        echo " DEBUG: ERROR: No VM host selected?"
+        F_MSG "ERROR" "ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+        [ -z "$PARENTF" ]&&PARENTF=F_ESXMGR
+        F_PARENTF $PARENTF
+    fi
     F_GETCFG
-    # add a progress bar because with perl SDK its fu..ing long..
+    # add a progress bar because with perl SDK its fu..ing slow..
     PRGRSFILE="${PRGRSFILE}_vmeditor"
     tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (VM Editor)" --width=650 --progress --progress-text="Collecting and converting VM information..." --auto-kill --auto-close &
     echo 5 > ${PRGRSFILE}
@@ -24,137 +32,86 @@ F_VMEDITOR()
     if [ -z "$TARGETVM" ]||[ -z "$PTARGXML" ];then
             echo " DEBUG: ERROR: No VM host selected or XML file has gone.."
             MSG="ERROR ($OPERR) You haven't selected a target VM or the XML file has gone. try again\n"
-            $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Return to vEMan"
+            $YAD --window-icon="$LOGO" --title="$TITLE (Oops)" --on-top --center --text "$MSG" --image dialog-error --button="Back"
             echo 100 >> $PRGRSFILE
             exit
     fi
     echo 20 >> $PRGRSFILE
-    # get a list of available datacenters
-    ESXDCS=$(https_proxy="" $XVIFS --sessionfile $AUTHSESS --server $SRV --listdc)
-    DCCNT=$(echo $ESXDCS | wc -l)
-    echo 30 >> $PRGRSFILE
-    # if more than one DC was detected the user needs to choose the correct one
-    if [ ! -z "$ESXDCS" ];then
-      if [ "$DCCNT" -eq 1 ];then
-        USEDC="$ESXDCS"
-        echo 40 >> $PRGRSFILE
-        echo "DEBUG: Only available datacenter is $USEDC so no need to bother user."
-      # well normally not needed to do an 'eq' again but to be totally sure.. i do so ;o)
-      elif [ "$DCCNT" -gt 1 ];then
-        echo 40 >> $PRGRSFILE
-        ESXDCCB=$(echo "$ESXDCS" |sed '/^$/d;/[[:space:]]/d' | tr '\n' '\!' | sed 's/!$//g')
-        ESXDC=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Choose Datacenter)" --width=600 --form \
-                --text "We detected more than 1 datacenter.\nPlease choose the datacenter of the selected VM or type it in manually:\n" \
-                --field="Selected system":RO $TARGETVM \
-                --field="Detected Datacenters":CBE "$ESXDCCB"\
-                --button="Save":77 \
-                --button="Cancel":1 \
-                --always-print-result)
-        DCERR=$?
-        echo "DEBUG: selected VM was $TARGETVM, answer was $DCERR settings was: $ESXDC" 
-        # if user aborts or clicking on Go back button we set the VMANS manually
-        # (we could also use break here but .. well there are so many ways..
-        if [ "$DCERR" -eq 252 ]||[ "$DCERR" -eq 222 ];then
-          exit $DCERR
-        elif [ -z "$ESXDC" ]; then
-          echo 100 >> $PRGRSFILE
-          F_MSG "No Datacenter choosen! ABORTED."
-          exit
-        fi
-        USEDC=$(echo "$ESXDC" | cut -d"|" -f2)
-      fi
-    fi
 
-  # validate usedc to be sure
-  [ -z "$USEDC" ]&& F_MSG "OOOPS. DC variable USEDC is empty?! ABORTED!" && exit 1
-  echo 50 >> $PRGRSFILE
+    TARGETVM=$TARGETVM F_GETDCS
+    echo 50 >> $PRGRSFILE
 
-  # fetch the VMX
-  XMLVMPATH=$($PYPARS --readxml -x $PTARGXML -m xmltag -t vmPathName)
-  XMLSTOR=$(echo $XMLVMPATH|cut -d" " -f1|sed 's/\[//g;s/\]//g')
-  XMLVMX=$(echo $XMLVMPATH|cut -d" " -f2)
-  # the downloaded vmx file - we leave it untouched see next var
-  LOCDLVMX="$VMCDIR/${TARGETVM}.vmx-dl"
-  # the vmx working copy
-  LOCNEWVMX="$VMCDIR/${TARGETVM}.vmx-new"
-  # the vmx we will later on upload
-  LOCUPLVMX="$VMCDIR/${TARGETVM}.vmx-up"
-  # the argument file for yad to workaround stupidness of yad
-  YADREST="$VMCDIR/${TARGETVM}.yadrest"
-  # the ESX info XML
-  XMLESX="$VMCDIR/${TARGETVM}.esxinfo"
-  https_proxy="" $XFILEACC --sessionfile "$AUTHSESS" --server $SRV --datacentername "$USEDC" --operation get --filetype datastore --datastorename "$XMLSTOR" --remotepath "$XMLVMX" --localpath "$LOCDLVMX"
-  if [ $? -ne 0 ];then
-    echo 100 >> $PRGRSFILE
-    F_MSG "\n\nAn error occured while downloading settings file.      \nPlease check logfile at:\n\n $FLOG"
-    exit
-  fi
-  echo 70 >> $PRGRSFILE
-  # duplicate vmx
-  cp -f $LOCDLVMX $LOCNEWVMX
-
-  # array space separated VMX values we want to get and edit.
-  # new vars needs to be also parsed in "present changeable data" section!
-  # VAR = VMX variable
-  # VARMAP= Name mapping for that variable
-  # Both are needed and the "MAP" one will be shown in the Description
-  RAMSIZE="memSize"
-  RAMSIZEMAP="RAM in Megabytes"
-  DNAME="displayName"
-  DNAMEMAP="Display Name"
-  ETH0NAME="ethernet0.networkName"
-  ETH0NAMEMAP="Network (eth0)"
-  RVNCPORT="RemoteDisplay.vnc.port"
-  RVNCPORTMAP="Console Port"
-  RVNCSTATE="RemoteDisplay.vnc.enabled"
-  RVNCSTATEMAP="Uncheck to disable console for this VM"
-  VCPUS="numvcpus"
-  VCPUSMAP="Total CPU count (CPU core * socket)"
-  VCPUSOCKET="cpuid.coresPerSocket"
-  VCPUSOCKETMAP="Cores per socket"
-
-  #ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $VCPUSOCKET $RVNCSTATE $RVNCPORT)
-  ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $VCPUSOCKET)
-  
-  # order is important! new vars needs to be also parsed in "present changeable data" section!
-  #ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus)
-
-  # get relevant data
-  unset VMXVALG VMXVAL
-  VMXARR=()
-  for VMXVAL in $(echo ${ARRVMVARS[@]});do
-    # parse XML and find matches
-    VMXVALG=$(grep -i $VMXVAL $LOCNEWVMX)
-    if [ ! -z "$VMXVALG" ];then
-        echo "DEBUG: VMX arg $VMXVALG detected."
+    TARGETVM=$TARGETVM F_FETCHVMX
+    if [ -f "$LOCDLVMX" ];then
+        echo "DEBUG: local vmx file is here: $LOCDLVMX"
     else
-        echo "DEBUG: VMX arg $VMXVAL NOT present."
-        # special handling in case of CPU. if it is not defined it will be 1 CPU
-        if [ "$VMXVAL" == "$VCPUS" ];then
-                VMXVALG="$VMXVAL = \"1\""
+        F_MSG "ERROR" "DEBUG: local vmx file $LOCDLVMX is missing!!! ABORTED."
+        exit
+    fi
+    echo 70 >> $PRGRSFILE
+
+    # array space separated VMX values we want to get and edit.
+    # new vars needs to be also parsed in "present changeable data" section!
+    # VAR = VMX variable
+    # VARMAP= Name mapping for that variable
+    # Both are needed and the "MAP" one will be shown in the Description
+    RAMSIZE="memSize"
+    RAMSIZEMAP="RAM in Megabytes"
+    DNAME="displayName"
+    DNAMEMAP="Display Name"
+    ETH0NAME="ethernet0.networkName"
+    ETH0NAMEMAP="Network (eth0)"
+    RVNCPORT="RemoteDisplay.vnc.port"
+    RVNCPORTMAP="Console Port"
+    RVNCSTATE="RemoteDisplay.vnc.enabled"
+    RVNCSTATEMAP="Uncheck to disable console for this VM"
+    VCPUS="numvcpus"
+    VCPUSMAP="Total CPU count (CPU core * socket)"
+    VCPUSOCKET="cpuid.coresPerSocket"
+    VCPUSOCKETMAP="Cores per socket"
+  
+    #ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $VCPUSOCKET $RVNCSTATE $RVNCPORT)
+    ARRVMVARS=($RAMSIZE $DNAME $ETH0NAME $VCPUS $VCPUSOCKET)
+    
+    # order is important! new vars needs to be also parsed in "present changeable data" section!
+    #ARRVMVARS=(memsize displayName ethernet0.networkName RemoteDisplay.vnc.port numvcpus)
+  
+    # get relevant data
+    unset VMXVALG VMXVAL
+    VMXARR=()
+    for VMXVAL in $(echo ${ARRVMVARS[@]});do
+        # parse XML and find matches
+        VMXVALG=$(grep -i $VMXVAL $LOCNEWVMX)
+        if [ ! -z "$VMXVALG" ];then
+            echo "DEBUG: VMX arg $VMXVALG detected."
         else
-            # special handling in case of CPU core per socket. if it is not defined it will be 1 core per socket
-            if [ "$VMXVAL" == "$VCPUSOCKET" ];then
-                VMXVALG="$VMXVAL = \"1\""
-            else                
-                VMXVALG="$VMXVAL = \"UNKNOWN\""
+            echo "DEBUG: VMX arg $VMXVAL NOT present."
+            # special handling in case of CPU. if it is not defined it will be 1 CPU
+            if [ "$VMXVAL" == "$VCPUS" ];then
+                    VMXVALG="$VMXVAL = \"1\""
+            else
+                # special handling in case of CPU core per socket. if it is not defined it will be 1 core per socket
+                if [ "$VMXVAL" == "$VCPUSOCKET" ];then
+                    VMXVALG="$VMXVAL = \"1\""
+                else                
+                    VMXVALG="$VMXVAL = \"UNKNOWN\""
+                fi
             fi
         fi
-    fi
-    if [ ! -z "$VMXARR" ];then
-      VMXVAL=$(echo $VMXVALG| cut -d"=" -f1 |sed 's/[[:space:]].*$//g')
-      VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
-      if [ "$VMXVAL" == "$RVNCSTATE" ];then
-          VMXVALG=$(echo $VMXVALG| cut -d"=" -f2|tr [[:lower:]] [[:upper:]])
-      fi
-      VMXARR=(${VMXARR[@]},$VMXVALG)
-      echo "DEBUG: $VMXVALG added to array. Now: ${VMXARR[@]}"
-    else
-      VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
-      VMXARR=($VMXVALG)
-      echo "DEBUG: $VMXVALG added to a NEW array. Now: ${VMXARR[@]}"
-    fi
-  done
+        if [ ! -z "$VMXARR" ];then
+          VMXVAL=$(echo $VMXVALG| cut -d"=" -f1 |sed 's/[[:space:]].*$//g')
+          VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+          if [ "$VMXVAL" == "$RVNCSTATE" ];then
+              VMXVALG=$(echo $VMXVALG| cut -d"=" -f2|tr [[:lower:]] [[:upper:]])
+          fi
+          VMXARR=(${VMXARR[@]},$VMXVALG)
+          echo "DEBUG: $VMXVALG added to array. Now: ${VMXARR[@]}"
+        else
+          VMXVALG=$(echo $VMXVALG| cut -d"=" -f2)
+          VMXARR=($VMXVALG)
+          echo "DEBUG: $VMXVALG added to a NEW array. Now: ${VMXARR[@]}"
+        fi
+    done
   echo 75 >> $PRGRSFILE
   unset RETEDIT
   # present changeable data

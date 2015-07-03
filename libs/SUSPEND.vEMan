@@ -1,8 +1,10 @@
 # suspend a VM
 F_SUSPEND()
 {
-        # go to bed     
-        echo susp
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    # go to bed     
+    echo susp
 }
 
 export -f F_SUSPEND

@@ -1,6 +1,8 @@
 # write the settings
 F_RWOVFSET()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	echo "LASTSTORE=\"$OVFDS\"" > $SRV_CFG
 	echo "LASTNET=\"$OVFNET\"" >> $SRV_CFG
 	echo "LASTSOURCE=\"$OVFSRC\""  >> $SRV_CFG
@@ -9,6 +11,8 @@ F_RWOVFSET()
 # save the entered values
 F_SAVEOVFSET()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	# save the last used ovf info into esx config
 	if [ ! -d "$CFGDIR/$SRV" ];then
 		mkdir -v "$CFGDIR/$SRV"

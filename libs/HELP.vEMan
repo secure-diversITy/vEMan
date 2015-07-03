@@ -1,6 +1,8 @@
 # Displays usage and help
 F_HELP()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	MODULES=$(sed -n 's/.*\(VALIDFUNCS=\)"\(.*\)"/\2/p' $VLIB/runFUNCTION.vEMan)
         cat << EOHELP
         

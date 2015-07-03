@@ -1,0 +1,51 @@
+# This function will scan the ESX server for available datacenters
+F_GETDCS()
+{
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+
+    if [ -z "$TARGETVM" ];then
+        echo " DEBUG: ERROR: No VM host selected?"
+        F_MSG "ERROR" "ERROR ($OPERR) You haven't selected a target VM. Please try again\n"
+        [ -z "$PARENTF" ]&&PARENTF=F_ESXMGR
+        F_PARENTF $PARENTF
+    fi
+    
+    F_GETCFG
+    # get a list of available datacenters
+    ESXDCS=$(https_proxy="" $XVIFS --sessionfile $AUTHSESS --server $SRV --listdc)
+    DCCNT=$(echo $ESXDCS | wc -l)
+    
+    # if more than one DC was detected the user needs to choose the correct one
+    if [ ! -z "$ESXDCS" ];then
+      if [ "$DCCNT" -eq 1 ];then
+        USEDC="$ESXDCS"
+        echo "DEBUG: Only available datacenter is $USEDC so no need to bother user."
+      # well normally not needed to do an 'eq' again but to be totally sure.. i do so ;o)
+      elif [ "$DCCNT" -gt 1 ];then
+        ESXDCCB=$(echo "$ESXDCS" |sed '/^$/d;/[[:space:]]/d' | tr '\n' '\!' | sed 's/!$//g')
+        ESXDC=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Choose Datacenter)" --width=600 --form \
+                --text "We detected more than 1 datacenter.\nPlease choose the datacenter of the selected VM or type it in manually:\n" \
+                --field="Selected system":RO $TARGETVM \
+                --field="Detected Datacenters":CBE "$ESXDCCB"\
+                --button="Save":77 \
+                --button="Cancel":1 \
+                --always-print-result)
+        DCERR=$?
+        echo "DEBUG: selected VM was $TARGETVM, answer was $DCERR settings was: $ESXDC" 
+        # if user aborts or clicking on Go back button we set the VMANS manually
+        # (we could also use break here but .. well there are so many ways..
+        if [ "$DCERR" -eq 252 ]||[ "$DCERR" -eq 222 ];then
+          exit $DCERR
+        elif [ -z "$ESXDC" ]; then
+          echo 100 >> $PRGRSFILE
+          F_MSG "ERROR" "No Datacenter choosen! ABORTED."
+          exit
+        fi
+        USEDC=$(echo "$ESXDC" | cut -d"|" -f2)
+      fi
+    fi
+
+    # validate usedc to be sure
+    [ -z "$USEDC" ]&& F_MSG "OOOPS. DC variable USEDC is empty?! ABORTED!" && exit 1
+}
+export -f F_GETDCS

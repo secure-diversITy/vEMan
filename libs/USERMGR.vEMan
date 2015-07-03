@@ -1,7 +1,9 @@
 # this opens the ESX user manager
 F_USERMGR()
 {
-        F_GETCFG
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
 	F_PARENTF F_USERMGR
 	unset UANS URET
 	while [ -z "$UANS" ];do

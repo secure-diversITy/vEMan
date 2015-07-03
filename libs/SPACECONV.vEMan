@@ -1,9 +1,11 @@
 # this converts spaces into escaped spaces
 F_SPACECONV()
 {
-        CONVFROM="$1"
-        CONVED=$(echo "$CONVFROM" | sed 's/\ /\\\\ /g')
-        echo "DEBUG: converted $CONVFROM to $CONVED"
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    CONVFROM="$1"
+    CONVED=$(echo "$CONVFROM" | sed 's/\ /\\\\ /g')
+    echo "DEBUG: converted $CONVFROM to $CONVED"
 }
 
 export -f F_SPACECONV

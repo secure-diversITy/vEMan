@@ -2,10 +2,12 @@
 # FKA: F_CONSOLE
 F_OPENCONSOLE()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
-        # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
-        echo 100 >> $PRGRSFILE
-        echo 0 > $PRGRSFILE
+    # set progress bar to 100 first before setting to 0 to avoid duplicate progress bars
+    echo 100 >> $PRGRSFILE
+    echo 0 > $PRGRSFILE
 
 	F_CHKESXVER
 

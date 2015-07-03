@@ -1,7 +1,9 @@
 # Add a new user to an ESX/i
 F_ADDUSR()
 {
-        F_GETCFG
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
 
 	F_PARENTF F_ADDUSR
 	F_MGUSR

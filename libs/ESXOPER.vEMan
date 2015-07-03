@@ -1,6 +1,8 @@
 # Manage mode (shutdown, maintenance, reboot, ...)
 F_ESXOPER()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
     F_GETCFG
 	F_PARENTF F_HOSTMGR
     unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER DETPOWERNEXT

@@ -1,8 +1,10 @@
 # Scans ESX for available networks
-F_SCANNET(){
+F_SCANNET()
+{
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
 	unset NETS
-	#NETS="$(https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server \"$SRV\" --fields net |grep -i Networks | sed 's/\:[[:space:]]*/|/g' |cut -d '|' -f2 | sed -e 's/,[[:space:]]*/|/g' -e 's/|$//g')"
     NETS="$(https_proxy="" $X3HOSTSW --sessionfile $AUTHSESS --server \"$SRV\" --list | sed 's/|$//g')"
 	echo "DEBUG: detected networks: >$NETS<"
 	[ -z "$NETS" ]&& echo "DEBUG: WARNING CANNOT DETECT NETWORKS" && STORES="$LASTNET (unknown)"

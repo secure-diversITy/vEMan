@@ -1,38 +1,40 @@
 # get the full VM path for the selected machine
 F_GETVMPATH()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
-        if [ -z "$TARGETVM" ];then
-                echo "DEBUG: F_GETVMPATH detects empty TARGETVM"
-                F_SELECTVM
-        fi
-        echo "DEBUG: $TARGETVM"
+    if [ -z "$TARGETVM" ];then
+            echo "DEBUG: F_GETVMPATH detects empty TARGETVM"
+            F_SELECTVM
+    fi
+    echo "DEBUG: $TARGETVM"
 
-        # ATTENTION VMS VM LIST will display ONLINE VMs only!!
-        FULLVMPATH=$(https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)|(Config File)' | sed -n /"$TARGETVM"\$/'{n;p}' |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//')
-        #FULLVMPATH=$(https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)|(Config File)' | grep "$TARGETVM" |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//')
+    # ATTENTION VMS VM LIST will display ONLINE VMs only!!
+    FULLVMPATH=$(https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)|(Config File)' | sed -n /"$TARGETVM"\$/'{n;p}' |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//')
+    #FULLVMPATH=$(https_proxy="" $XESXCLI --sessionfile $AUTHSESS --server $SRV vms vm list | egrep '(Display Name)|(Config File)' | grep "$TARGETVM" |sed s/.*://g|sed 's/^[ \t]*//;s/[ \t]*$//')
 
-        echo "DEBUG: FULLVMPATH is: $FULLVMPATH" 
+    echo "DEBUG: FULLVMPATH is: $FULLVMPATH" 
 
-        if [ -z "$FULLVMPATH" ];then
-                echo "DEBUG: woops VM is offline?!"
-                SAVEIFS=$IFS && IFS=$(echo -en "\n\b")
-                FULLVMPATH=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l | grep -i "$TARGETVM")
-                IFS=$SAVEIFS
-                if [ -z "$FULLVMPATH" ];then
-                        echo "DEBUG: WOOPS VM seems to be renamed after imported.."
-                        F_GETVMMANUAL
-                        #FULLVMPATH=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l | sed -n "s/.*\(\/.*vmx\).*/\1/p" |tr -d "^/")
-                fi
-        fi
+    if [ -z "$FULLVMPATH" ];then
+            echo "DEBUG: woops VM is offline?!"
+            SAVEIFS=$IFS && IFS=$(echo -en "\n\b")
+            FULLVMPATH=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l | grep -i "$TARGETVM")
+            IFS=$SAVEIFS
+            if [ -z "$FULLVMPATH" ];then
+                    echo "DEBUG: WOOPS VM seems to be renamed after imported.."
+                    F_GETVMMANUAL
+                    #FULLVMPATH=$(https_proxy="" $XVMCMD --sessionfile $AUTHSESS -H $SRV -l | sed -n "s/.*\(\/.*vmx\).*/\1/p" |tr -d "^/")
+            fi
+    fi
 
 
-        if [ -z "$FULLVMPATH" ];then
-                echo "ERROR: Cannot detect the full VM path ($FULLVMPATH).."
-                F_ERR "Cannot detect the full VM path ($FULLVMPATH).."
-        else
-                echo "DEBUG: Detected a VM path ($FULLVMPATH)"
-        fi
+    if [ -z "$FULLVMPATH" ];then
+            echo "ERROR: Cannot detect the full VM path ($FULLVMPATH).."
+            F_ERR "Cannot detect the full VM path ($FULLVMPATH).."
+    else
+            echo "DEBUG: Detected a VM path ($FULLVMPATH)"
+    fi
 }
 
 export -f F_GETVMPATH

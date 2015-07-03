@@ -1,6 +1,8 @@
 # Scan for a free port on ESX server which can then be used for VNC console
 F_GETFREEPORT()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
         echo Doing a full Scan. This will take a while..
 

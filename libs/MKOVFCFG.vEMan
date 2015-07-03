@@ -1,13 +1,14 @@
 # Generates the current OVF settings file
 F_MKOVFCFG()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	echo "DEBUG: Creating OVF settings file..."
 
-        echo "datastore=$OVFDS" > $OVFCONF
-        echo "network=$OVFNET" >> $OVFCONF
-        echo "name=$OVFNM" >> $OVFCONF
-        echo "diskMode=$OVFHDD" >> $OVFCONF
-
+    echo "datastore=$OVFDS" > $OVFCONF
+    echo "network=$OVFNET" >> $OVFCONF
+    echo "name=$OVFNM" >> $OVFCONF
+    echo "diskMode=$OVFHDD" >> $OVFCONF
 }
 
 export -f F_MKOVFCFG

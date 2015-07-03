@@ -1,35 +1,37 @@
 # Generates the setting file
 F_MKCFG()
 {
-        SRV=$(echo $SELECTION | cut -d "|" -f 1)
-        VUSER=$(echo $SELECTION |cut -d "|" -f 2)
-        PASS="$(echo $SELECTION | cut -d "|" -f 3)"
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    SRV=$(echo $SELECTION | cut -d "|" -f 1)
+    VUSER=$(echo $SELECTION |cut -d "|" -f 2)
+    PASS="$(echo $SELECTION | cut -d "|" -f 3)"
 
-        # encrypt the pw
-        F_ENC
+    # encrypt the pw
+    F_ENC
 
-        if [ "$DEBUG" -eq 0 ];then
-                if [ -z "$VUSER" ]||[ -z "$HASHPW" ]||[ -z "$SRV" ];then
-                        echo "F_MKCFG ERROR: Cannot parse the given user settings.."
-                        $VLIBFNC F_ERR "Cannot parse the given user settings!"
-                else
-                        echo "VUSER=\"${VUSER}\"" > $CFG
-                        echo "HASHPW=\"${HASHPW}\"" >> $CFG
-                        echo "SRV=\"${SRV}\"" >> $CFG
-			# check if destination needs to be added to saved target list
-			grep ${SRV} $CFGSRV > /dev/null
-			if [ $? -eq 0 ];then
-				sed -i "/.*${SRV}.*/d" $CFGSRV
-				sed -i "1s/^/SRV=\"${SRV}\"\n/" $CFGSRV
-			else
-				sed -i "1s/^/SRV=\"${SRV}\"\n/" $CFGSRV
-				#echo "SRV=\"${SRV}\"" >> $CFGSRV
-			fi
-                        export VUSER HASHPW SRV
-                        F_CRTCOOKIE
-                        echo "DEBUG: Starting keep-alive handler..."
-                        F_SAYHELLO &
-                fi
+    if [ "$DEBUG" -eq 0 ];then
+            if [ -z "$VUSER" ]||[ -z "$HASHPW" ]||[ -z "$SRV" ];then
+                    echo "F_MKCFG ERROR: Cannot parse the given user settings.."
+                    $VLIBFNC F_ERR "Cannot parse the given user settings!"
+            else
+                    echo "VUSER=\"${VUSER}\"" > $CFG
+                    echo "HASHPW=\"${HASHPW}\"" >> $CFG
+                    echo "SRV=\"${SRV}\"" >> $CFG
+        # check if destination needs to be added to saved target list
+        grep ${SRV} $CFGSRV > /dev/null
+        if [ $? -eq 0 ];then
+            sed -i "/.*${SRV}.*/d" $CFGSRV
+            sed -i "1s/^/SRV=\"${SRV}\"\n/" $CFGSRV
+        else
+            sed -i "1s/^/SRV=\"${SRV}\"\n/" $CFGSRV
+            #echo "SRV=\"${SRV}\"" >> $CFGSRV
         fi
+                    export VUSER HASHPW SRV
+                    F_CRTCOOKIE
+                    echo "DEBUG: Starting keep-alive handler..."
+                    F_SAYHELLO &
+            fi
+    fi
 }
 export -f F_MKCFG

@@ -1,16 +1,17 @@
 # this loop will let the vEMain main window open as long as the user abort/exit it
 F_MAINLOOP()
 {
-        RES="$AANS"
-        echo "DEBUG: Res before: $RES"
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    RES="$AANS"
+    echo "DEBUG: Res before: $RES"
 
-        while [ "$RES" != "252" ]||[ "$RES" != "111" ];do
+    while [ "$RES" != "252" ]||[ "$RES" != "111" ];do
 
-                F_ESXMGR
-                RES="$AANS"
-                echo "DEBUG: Res after: $RES"
-        done
-
+            F_ESXMGR
+            RES="$AANS"
+            echo "DEBUG: Res after: $RES"
+    done
 }
 
 export -f F_MAINLOOP

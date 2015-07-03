@@ -1,6 +1,8 @@
 # the action handlers
 F_ACTIONS()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
 
 case "$ACTION" in

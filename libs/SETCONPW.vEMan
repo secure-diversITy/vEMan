@@ -2,6 +2,8 @@
 # needs pw as argument!
 F_SETCONPW()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+
     F_GETCFG
     echo 20 >> $PRGRSFILE
     F_GETVMPATH
@@ -21,7 +23,7 @@ F_SETCONPW()
         exit
     else
         echo 70 >> $PRGRSFILE
-        https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.password "$NEWCONPW"
+        https_proxy="" $XVMCMD -H $SRV --sessionfile $AUTHSESS $FULLVMPATH setguestinfo RemoteDisplay.vnc.password "$NEWCONPW"  >> /dev/null
         SETPWRET=$?
         echo 100 >> $PRGRSFILE
         if [ "$SETPWRET" -ne 0 ];then

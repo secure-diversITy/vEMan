@@ -1,6 +1,8 @@
 # Manage power (shutdown, stop, reboot, ...)
 F_POWER()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         F_GETCFG
 
         unset PWRANS THEPOWER PWRID PWRSHORT DETPOWER

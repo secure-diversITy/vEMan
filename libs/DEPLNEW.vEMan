@@ -1,6 +1,8 @@
 # deploy a new VM 
 F_DEPLNEW()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
     F_MSG "Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman  \nif you want to push that."    
 #    F_GETCFG
 

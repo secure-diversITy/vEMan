@@ -1,6 +1,8 @@
 # the main window for the esx manager actions
 F_ESXMGR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         echo 100 >> $PRGRSFILE
         echo 0 > $PRGRSFILE
         tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (opening vEMan)" --width=350 --progress --progress-text="collecting data..." --auto-kill --auto-close &

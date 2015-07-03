@@ -1,42 +1,44 @@
 # create a session file based on the authentication data the user provided
 F_CRTCOOKIE()
 {
-        F_GETCFG
-        unset CMSG CERR
-        echo 60 > $PRGRSFILE
-        tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Creating session)" --width=350 --progress --progress-text="creating session..." --auto-kill --auto-close &
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
+    F_GETCFG
+    unset CMSG CERR
+    echo 60 > $PRGRSFILE
+    tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Creating session)" --width=350 --progress --progress-text="creating session..." --auto-kill --auto-close &
 
-        if [ ! -f "$AUTHSESS" ];then
-                echo "No session file detected. Creating one.."
-                F_DEC
+    if [ ! -f "$AUTHSESS" ];then
+            echo "No session file detected. Creating one.."
+            F_DEC
 #               CMSG=$(https_proxy="" $XECONNECT --savesessionfile $AUTHSESS --server $SRV --username "${VUSER}" --password "${DPASS}" 2>&1)
 #               echo "$CMSG"|grep -i error > /dev/null
-                CMSG=$(https_proxy="" $XECONNECT --savesessionfile $AUTHSESS --server $SRV --username "${VUSER}" --password "${DPASS}" 2>&1)
-                echo "$CMSG"|grep -i error > /dev/null
-                CERR=$?
-                if [ "$CERR" -eq 0 ]||[ ! -f "$AUTHSESS" ];then
-                        echo 100 >> $PRGRSFILE
-                        echo "DEBUG: Error checking authentication or creating cookie file (lib F_CRTCOOKIE)"
-                        echo "DEBUG: Return message was: ${CMSG}"
-                        F_ERR "Target said:\n\n${CMSG}\n"
+            CMSG=$(https_proxy="" $XECONNECT --savesessionfile $AUTHSESS --server $SRV --username "${VUSER}" --password "${DPASS}" 2>&1)
+            echo "$CMSG"|grep -i error > /dev/null
+            CERR=$?
+            if [ "$CERR" -eq 0 ]||[ ! -f "$AUTHSESS" ];then
+                    echo 100 >> $PRGRSFILE
+                    echo "DEBUG: Error checking authentication or creating cookie file (lib F_CRTCOOKIE)"
+                    echo "DEBUG: Return message was: ${CMSG}"
+                    F_ERR "Target said:\n\n${CMSG}\n"
 #                       F_EXIT
-                else
-                        echo "DEBUG: authentication successful (lib F_CRTCOOKIE)"
-                        echo "DEBUG: Return message was: ${CMSG}"
-                        
-                fi
-        else
-                https_proxy="" $XECONNECT --sessionfile $AUTHSESS --server $SRV
-                if [ $? -ne 0 ];then
-                        echo "Session file seems to be expired or invalid!"
-                        rm -vf "$AUTHSESS"
-                        echo 100 >> $PRGRSFILE
-                        F_AUTH
-                else
-                        echo "Valid session file detected"
-                        echo 100 >> $PRGRSFILE
-                fi
-        fi
+            else
+                    echo "DEBUG: authentication successful (lib F_CRTCOOKIE)"
+                    echo "DEBUG: Return message was: ${CMSG}"
+                    
+            fi
+    else
+            https_proxy="" $XECONNECT --sessionfile $AUTHSESS --server $SRV
+            if [ $? -ne 0 ];then
+                    echo "Session file seems to be expired or invalid!"
+                    rm -vf "$AUTHSESS"
+                    echo 100 >> $PRGRSFILE
+                    F_AUTH
+            else
+                    echo "Valid session file detected"
+                    echo 100 >> $PRGRSFILE
+            fi
+    fi
 }
 
 export -f F_CRTCOOKIE

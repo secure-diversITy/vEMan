@@ -1,6 +1,8 @@
 # Try to detect if VNC console is enabled or not
 F_DETECTVNC()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
 	F_GETCFG
         DETONLY="x$2"
         SAVEIFS="$IFS" && IFS=$(echo -en "\n\b")

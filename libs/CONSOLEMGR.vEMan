@@ -1,6 +1,8 @@
 # the console manager which gives you access to console features like enabling, disabling opening console
 F_CONSOLEMGR()
 {
+    echo "DEBUG: ********* $FUNCNAME entered *********"
+    
         unset VANS CANS
         if [ -z "$TARGETVM" ];then
                 echo " DEBUG: ERROR: No VM host selected?"
