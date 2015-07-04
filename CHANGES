@@ -7,12 +7,10 @@
 ###################################################################################################################
 
 
-PREVIEW // 2015-06-26
+PREVIEW // 2015-07-04
 #########################################################################
 
-    WIP: VM Editor still not ready to use!!
     WIP: Deploy new VM (create not OVF) still not ready to use!!
-    WIP: Console Manager remove password protection of console not ready!
 
     FIXES
     -----------------
@@ -41,6 +39,53 @@ PREVIEW // 2015-06-26
     fix: added terminal=1 to the desktop icon as at least for Ubuntu 14.04 vEMan won't start otherwise
     fix: (VM Editor) all fields needed to are forced to be a digit
     fix: multiple networks were not detected correctly
+    fix: (ESXMGR) when an expected esx info could not beeing fetched vEMan will not
+         close completely anymore but instead showing a corresponding hint only
+    fix: (ESXMGR) when the initial connection was not successful for fetching the esx
+         info there will happen no further parsing anymore (because it would fail)
+    fix: (ESXMGR) when maintenance mode off and reboot/shutdown the cancel button
+         in the hint has closed vEMan completely
+    fix: (ESXMGR) fetching live data in operations not optimal
+    fix: The SALT password needed for hashing the login password
+         was moved to etc/uservars_vEMan.cfg where it makes much more sense
+    fix(!): (DEPLOY) when an ovf/ova upload ended with errors vEMan still continues.
+    fix: (DEPLOY) in the pre-validate check the schema was not validated for ovf/ova
+         which results in bad uploads. Now we check for the schema, too so
+         e.g. a virtualbox created ovf/ova will throw douzends of errors
+         because they are not compatible with ESX (without modification).
+    fix/new: scanning networks on host sometimes failing
+    fix: (VMEDITOR) networks are not added (only the current one was displayed)
+    fix: (VMEDITOR) port and state of console could not being compared when never set
+         the result was that the editor always had shown the upload dialog
+         even when there were no changes
+    fix: (VMEDITOR) comparison of before and after was not possible because of several issues
+         e.g.: NUM in yad results in comma values which then are different of course
+    fix: (VMEDITOR) added a hint to upload dialog that the output cannot be edited - this may
+         or may not come in the future..
+    fix(!): when you had online and suspended VMs only and no offline VM
+            the VM list had displayed online VMs only (no suspended)
+    fix: (CONSOLE) added powerstate check before removing protection!
+         You can set protection when VM is online or suspended but when you
+         want to remove it you HAVE TO power off your VM before. If you
+         haven't an error message will be shown now
+    fix: (CONSOLE) removed protection password from log output
+    fix: (VMEDITOR) when a value like CPU does not exist but need to be changed
+         the setting was added but NOT VERIFIED! Because of this a value of
+         9 CPUs when you have 8 on the ESX only was possible.
+         Now checking each user setting regardless of an existing value in vmx!
+    fix: (VMEDITOR) the calculation for cores per socket was wrong
+    fix: (VMEDITOR) the error output dramatically enhanced when the calculation
+         regarding CPU and cores per socket made wrong by the user
+    fix: (CONSOLE) removed not-ready hint for remove protection
+    fix: (DEPLOY) re-designed deployment chooser dialog
+    fix: (DEPLOY) when canceling deployment dialogs vEMan exited
+         completly. now returning to main screen instead.
+    fix: (DEPLOY) re-designed EULA dialog
+    fix: when a VM was renamed several functions in vEMan will open a manual
+         selection dialog which height was not optimal
+    fix: (HOSTMGR) when fetching/refreshing ESX info the progress bar had
+         minimized the info window
+
 
     ENHANCEMENTS
     -----------------
@@ -108,7 +153,26 @@ PREVIEW // 2015-06-26
     new: (VM Manager) doubleclick will now open the edit mode
     new: (Console Manager) detailed information when enabling console
     new(!): (Console Manager) added an option to password protect console
-
+    new: (ESXMGR) added an option to enter maintenance mode automatically when it is
+         not enabled and you choose reboot or shutdown
+    new: (ESXMGR) added some wait progress bars for the gaps when fetching live data
+    new: (ESXMGR) more debug output for fetching esx info
+    new: (ESXMGR) added an option to close or reconnect when shutdown/reboot choosen
+    new: a much more convenient way for enabling vEMan console described
+         in docs and when connecting the first time to 5.1 or higher
+    new: vswitch tool added needed for catching info about networks etc
+    new: now checking for an empty salt and abort if empty!
+    new: (DEPLOY) when an ovf/ova upload error occurs you will see an option to catch
+         the error message now
+    new: (DEPLOY) the error message of validating OVA/OVF result now displayed
+    new: (DEPLOY) OVA tested now working fine! Updated all dialogs to handle OVA, too
+    new: the buttons layout now centered for vEMan main window
+    new: added the current called function name to log. this dramatically eases debugging..
+    new(!): (CONSOLE) completely removing the protection now possible
+    new: moved some code from EDITOR to 2 new modules:
+         - GETDCS for checking datacenters
+         - FETCHVMX for fetching a VM specific vmx file
+         
 
 v0.9.6  // 2013-03-25
 #########################################################################

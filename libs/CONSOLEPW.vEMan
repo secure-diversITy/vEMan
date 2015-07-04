@@ -77,7 +77,7 @@ To avoid that it is highly recommended to protect your console.\n" \
                     if [ "x${PWRSTATE}" == "xoff" ];then
                       echo "DEBUG: going on..."
                     else
-                      F_MSG "ERROR" "Oops VM state for $TARGETVM is <span font_weight='bold'>SET</span>$PWRSTATE</span>.\n\nYou are allowed to <span font_weight='bold'>SET</span> protection while the VM is running \nbut <span font_weight='bold'>REMOVING</span> needs a powered off VM (suspend or powered on is not allowed)!\n\nPlease turn the VM off and try again."
+                      F_MSG "ERROR" "Oops VM state for $TARGETVM is <span font_weight='bold'>$PWRSTATE</span>.\n\nYou are allowed to <span font_weight='bold'>SET</span> protection while the VM is running \nbut <span font_weight='bold'>REMOVING</span> needs a powered off VM (suspend or powered on is not allowed)!\n\nPlease turn the VM off and try again."
                       exit
                     fi
                     tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Preparing protection removal..." --auto-kill --auto-close &
