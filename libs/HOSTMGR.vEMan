@@ -9,7 +9,7 @@ F_HOSTMGR()
 	while [ -z "$HANS" ];do
 		https_proxy="" $XHOSTINF --sessionfile $AUTHSESS --server "$SRV" --machinereadable --fields \
 			hostname,boottime,cpumodel,cpuspeed,cpuusage,memorysize,memoryusage,maintenancemode,rebootrequired,software \
-            |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --center --width 400 --progress --progress-text "Fetching live info..." --pulsate --auto-close)\
+            |tee >($YAD --window-icon="$LOGO" --title="$TITLE (Please be patient)" --on-top --width 400 --progress --progress-text "Fetching live info..." --pulsate --auto-close)\
 			| $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Host Manager)" --width=700 --height=500 \
 				--text "Current information is queried live from the ESX.\n" \
 				--list --column Property --column "Current value" --button=Users:1 --button="ESX operations":99 --button=Refresh:2 --button="Back":3

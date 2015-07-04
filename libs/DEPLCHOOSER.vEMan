@@ -10,10 +10,13 @@ F_DEPLCHOOSER()
             PARENTF=F_ESXMGR
     fi
     echo "DEBUG: choose how to deploy.."
-    $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Deploy mode)" --on-top --center --text "How do you want to deploy?\n" \
-         --button "Create (not ready yet)":0  \
-         --button "OVA/OVF/VMX":1 \
-         --button=Cancel
+    $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Deploy mode)" --on-top --center \
+            --text "How do you want to deploy?\n\n\
+<span font_weight='bold'>Appliance:</span>\tChoose an OVA/OVF/VMX (locally or by URL)\n\
+<span font_weight='bold'>Create:</span>\t\tNew from scratch\n"\
+            --button "Create (not ready yet)":0  \
+            --button "Appliance":1 \
+            --button=Cancel
     case $? in
         0)
         echo "DEBUG: deploy a new VM choosen.."
@@ -21,7 +24,7 @@ F_DEPLCHOOSER()
         ;;
         1)
         echo "DEBUG: deploy ova/ovf/vmx choosen.."
-        F_DEPLVMX
+        F_DEPLOVF
         ;;
         *)
         echo "DEBUG: GOT NO ANSWER OR ABORTED BY USER."

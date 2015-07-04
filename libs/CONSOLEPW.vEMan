@@ -77,10 +77,9 @@ To avoid that it is highly recommended to protect your console.\n" \
                     if [ "x${PWRSTATE}" == "xoff" ];then
                       echo "DEBUG: going on..."
                     else
-                      F_MSG "ERROR" "Oops VM state for $TARGETVM is $PWRSTATE. You are allowed to SET protection while the VM is running but REMOVING need a powered off VM (suspend or powered on is not allowed)!\n\nPlease turn the VM off and try again."
+                      F_MSG "ERROR" "Oops VM state for $TARGETVM is <span font_weight='bold'>SET</span>$PWRSTATE</span>.\n\nYou are allowed to <span font_weight='bold'>SET</span> protection while the VM is running \nbut <span font_weight='bold'>REMOVING</span> needs a powered off VM (suspend or powered on is not allowed)!\n\nPlease turn the VM off and try again."
                       exit
                     fi
-                    F_MSG "Sorry but this function is not ready yet. You can place a request on:\n https://sourceforge.net/projects/veman  \nif you want to push that.\n\nWe will continue but do not expect that anything is working!"     
                     tail -f $PRGRSFILE | $YAD --window-icon="$LOGO" --center --title="$TITLE (Console protection)" --width=650 --progress --progress-text="Preparing protection removal..." --auto-kill --auto-close &
                     echo 50 >> $PRGRSFILE
                     echo " DEBUG: CANS is $CANS"

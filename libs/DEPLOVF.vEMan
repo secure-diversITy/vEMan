@@ -26,7 +26,7 @@ F_DEPLOVF()
             ERROVF1="$?"
             echo "DEBUG: OVFCFG exit result was: $ERROVF1"
             if [ "$ERROVF1" -eq 1 ]||[ "$ERROVF1" -eq 252 ];then
-                    F_EXIT
+                $PARENTF
             fi              
 
             OVFSRC=$(echo "$OVFCFG" | cut -d "|" -f 1)
@@ -47,35 +47,42 @@ F_DEPLOVF()
         fi
 
 # We need to autoaccept all EULAs atm! Otherwise deployment will not work when an EULA exists.
-#       if [ "$OVFEULA" == "TRUE" ];then
-                MSG="HINT: At the moment all EULAs will be autoaccepted!\nEnsure that you have read the license agreement of the OVF carefully"
-                $YAD --window-icon="$LOGO" --title="$TITLE (Hint)" --on-top --center --text "$MSG" --button="I have read the EULA of source appliance"
-                ACPTEULA="--acceptAllEulas"
-#       fi
-
+        MSG="EULAs of an OVF/OVA will be autoaccepted!\n\nEnsure that you have read the license agreement of the appliance carefully and that you can accept it's content!\n\n"
+        $YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --title="$TITLE (Hint)" --on-top --center --text "$MSG" --button=Cancel:3 --button="I accept the EULA of the appliance":5
+        if [ $? -eq 5 ];then
+            ACPTEULA="--acceptAllEulas"
+            echo "DEBUG: user accepted appliance EULA"
+        else
+            echo "DEBUG: deploying aborted because user do not want to accept the EULA!"
+            $PARENTF
+        fi
+            
         if [ "$OVFPWR" == "TRUE" ];then
                 PWRON="--powerOn"
         fi
 
         YANS=0
         while [ -z "$OVFNM" ]||[ -z "$OVFHDD" ];do
-        OVFPROP=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Configure OVF)" --width=650  --form --item-separator="#" \
+            OVFPROP=$($YAD --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO" --center --title="$TITLE (Configure OVF)" --width=650 --form --item-separator="#" \
                     --text "OVF / VMX deployment" \
                     --field="Type in a name for your new VM" "" \
                     --field="Choose your target disk type\n (thin and thick are valid for ESX(i)/VI only)":CB \
                             "thin#thick#monolithicSparse#monolithicFlat#twoGbMaxExtentSparse#twoGbMaxExtentFlat#twoGbMaxExtentSparse#streamOptimized" \
                     --field="Enable console? (recommended)":CHK TRUE \
                     )
-                if [ $? -eq 1 ];then    
-                        F_EXIT 
-                fi              
+            RETVALI=$?
+            echo "DEBUG: answer was: $RETVALI"
+            if [ $RETVALI -ne 0 ];then
+                echo "DEBUG: deploying canceled by user request!"
+                $PARENTF
+            fi              
 
-		# we will convert spaces within the VM name..
-		OVFNM=$(echo "$OVFPROP"| cut -d "|" -f1 |tr " " "_" )
-                OVFHDD=$(echo "$OVFPROP" | cut -d "|" -f 2)
-                OVFVNC="$(echo "$OVFPROP" | cut -d "|" -f 3)"
+    		# we will convert spaces within the VM name..
+            OVFNM=$(echo "$OVFPROP"| cut -d "|" -f1 |tr " " "_" )
+            OVFHDD=$(echo "$OVFPROP" | cut -d "|" -f 2)
+            OVFVNC="$(echo "$OVFPROP" | cut -d "|" -f 3)"
 
-                echo "DEBUG: $OVFNM $OVFHDD $OVFVNC $ACPTEULA $PWRON ${OVFDEST}"
+            echo "DEBUG: $OVFNM $OVFHDD $OVFVNC $ACPTEULA $PWRON ${OVFDEST}"
         done
 
         # This will create the local ovftool config file which is needed to avoid problems when parsing
