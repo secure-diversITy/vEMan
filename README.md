@@ -3,6 +3,13 @@
 Known Issues
 --------------
 
+    Perl is a nightmare! Unfortunately vEMan currently depends on several perl
+    applications and of course the VMware SDK for perl which is really not a
+    good way publishing software which should run without problems..
+    My goal is to move all code over to python using the official VMware python SDK
+    instead of the perl one and forget all that crap.. To do this I need your
+    help: https://www.gofundme.com/veMan
+        
 	If you encounter issues you can use the GIT repo which may already contain
 	fixes for your problem and check docs/TROUBLE for problem hunting.
     
@@ -11,7 +18,6 @@ Known Issues
     
 	If you still want to use the development/latest available version:
 	git clone https://github.com/xdajog/vEMan.git vEMan-git
-
 
 Requirements
 ---------------
@@ -26,17 +32,17 @@ Requirements
 	installed to get vEMan running:
 
 	netcat, yad (***), a vncviewer (like http://tigervnc.org/ or similar), openssl,
-	bash, grep, sed, python (v2.5 or higher)
+	bash, grep, sed, python, bc, ... 
 
 Recommended versions
 --------------------
     
     Currently recommended and well tested environment is:
     
-        - VMware SDK for Perl:  v5.1 (v5.5 is NOT supported, v6.0 seems to work but not longterm tested yet)
-        - ovftool:              v2.0.1 (or 3.x.x when you do NOT want to deploy)
-        - yad:                  v0.23.1
-        - python:               v2.7.3
+        - VMware SDK for Perl:  v6.0, v5.1 (v5.5 has issues!)
+        - ovftool:              v2.0.1 (or 3.x.x/4.x.x when you do NOT want to deploy)
+        - yad:                  v0.26
+        - python:               v2.7
     
     Other versions may work but if you encounter problems try to upgrade/downgrade
     to the above versions first.
@@ -53,7 +59,12 @@ HELP
 
 	If you struggle somewhere you can get community help at the vEMan project page
     on sourceforge.net!
-    Take also a look to the docs/TROUBLE if you encounter a problem!
+    
+    FAQ in how to get support:
+    https://sourceforge.net/p/veman/discussion/support/thread/0c98a6f0/
+    --> YOU NEED TO FOLLOW THOSE STEPS MENTIONED THERE!!
+    
+    Take also a look to the docs/TROUBLE if you encounter a problem
 
 
 Footnotes
@@ -61,9 +72,9 @@ Footnotes
 
 	(*) http://www.vmware.com/support/developer/vcli/
         Even if I encountered no problems when using VMware SDK for Perl Toolkit v4.x
-        I recommend using v5.1 for vEMan.
+        I recommend using v6.0 or 5.1 (when not using ESX 6) for vEMan.
         THERE ARE issues with VMware SDK 5.5 !!
-        Since v0.9.x vEMan is tested with VMware SDK for Perl v5.1 and higher only. 
+        vEMan is tested with VMware SDK for Perl v6.0 only. 
         That means NOT that previous Perl Toolkits will NOT work anymore - but it
         means I will not TEST previous SDKs anymore..
         
