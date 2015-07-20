@@ -13,11 +13,12 @@ F_DELETEVM()
         fi
 
         while [ -z "$DELANS" ];do
-                DELANS=$($YAD --window-icon="$LOGO" --center --title="$TITLE (Delete VM)" --width=400 --form \
-			--text "Double-Check if that is the VM you want to delete!" \
+                DELANS=$($YAD  --image="$LOGO_MAIN" --image-on-top --window-icon="$LOGO"  --center --title="$TITLE (Delete VM)" --width=600 --form \
+			--text "Double-Check if that is the VM you want to delete!\n
+Every file <span font_weight='bold'>including the disk(s)</span> will be deleted if you continue!" \
                         --field=:LBL\
                         --field="Selected system":RO \
-			--button="DELETE above VM!":77 \
+			--button="DELETE VM + disk!":77 \
 			--button="Oh no.. Go back":1 \
 			--always-print-result \
 			false \
