@@ -10,10 +10,6 @@ case "$ACTION" in
                 echo Deploying OVF
                 F_DEPLOVF
         ;;
-        Deploy_VMX)
-                echo Deploying VMX
-                F_DEPLVMX
-        ;;
         DeployChooser)
                 echo Deploy chooser
                 F_DEPLCHOOSER

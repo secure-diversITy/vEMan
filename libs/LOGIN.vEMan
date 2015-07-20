@@ -39,9 +39,6 @@ F_LOGIN()
         echo DEBUG: Answer was $YANS
 
         case "$YANS" in
-                22)
-                ACTION=Deploy_VMX
-                ;;
                 0|23)
                 ACTION=Manage_VM
                 ;;

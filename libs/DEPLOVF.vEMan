@@ -92,23 +92,30 @@ F_DEPLOVF()
 	# Either the source is not valid (e.g. not OVF/VMX) or is not reachable over the internet.
 	# So the following check ensures that the source can be read before proceeding the ovf import.
 	# This will not completely solve faulty imports but it's 1 step further on the way to handle OVF import probs.
-	all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL --schemaValidate "$OVFSRC"
-	VERSRC=$?
-	echo "DEBUG: VERSRC was: >$VERSRC<"
-	if [ "$VERSRC" -ne 0 ];then
-		echo "DEBUG: Oops - cannot proceed because the source >$OVFSRC< is not valid! Check log"
-		echo "DEBUG: or use this command to find out more: >http_proxy="" https_proxy="" ovftool $OVFSRC<"
+    echo "$OVFSRC" |grep -i 'vmx\|ovf' >> /dev/null
+    FFRES=$?
+    if [ $FFRES -eq 0 ];then 
+        all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL --schemaValidate "$OVFSRC"
+        VERSRC=$?
+    else
+        VERSRC=999
+        echo "DEBUG: Source is invalid ($OVFSRC)!!"
+    fi
+    echo "DEBUG: VERSRC was: >$VERSRC<"
+    if [ "$VERSRC" -ne 0 ];then
+        echo "DEBUG: Oops - cannot proceed because the source >$OVFSRC< is not valid! Check log"
+        echo "DEBUG: or use this command to find out more: >http_proxy="" https_proxy="" ovftool $OVFSRC<"
 
         VAMSG="$(all_proxy="" ALL_PROXY="" http_proxy="" https_proxy="" $XOVFTOOL --schemaValidate "$OVFSRC" 2>&1)"
         echo "$VAMSG"| $YAD --window-icon="$LOGO" --title="$TITLE (ERROR)" --on-top --center --image dialog-error --selectable-labels --list --column=output --no-headers\
             --width=800 --height=600 \
             --text "Cannot proceed because the source is not valid.\n\nThe command used:\n\nhttp_proxy=\"\" https_proxy=\"\" $XOVFTOOL --schemaValidate \"$OVFSRC\"\n\nThe output:\n" \
             --button Close
-		F_ESXMGR
-	else
-		echo "DEBUG:the source >$OVFSRC< is valid" 
-	fi
-
+        F_ESXMGR
+    else
+        echo "DEBUG:the source >$OVFSRC< is valid" 
+    fi
+        
     # Hint: with ovftool 2.1 it expects the pw WITHIN the command (no echo pipe..) but this is not good 
 	# when the pw contains special chars
 	# Another problem when NOT using --machineOutput is that the progress bar will never work!!!!!
