@@ -33,6 +33,43 @@ Requirements
 
 	netcat, yad (***), a vncviewer (like http://tigervnc.org/ or similar), openssl,
 	bash, grep, sed, python, bc, ... 
+	
+
+
+IMPORTANT - Self-Signed Certificates
+---------------
+
+	You must disable Perl SSL certificate checking when using the default 
+	self-signed VMWare certificates.
+
+	After installing if you start vEMan via the command line (./vEMan) you will get an error
+	trying to connect.
+
+	"DEBUG: Argument given is valid (F_ERR Target said:\n\nServer version unavailable at 
+	'https://10.10.10.5:443/sdk/vimService.wsdl' at /usr/share/perl/5.18/VMware/VICommon.pm
+	line 545.\n)"
+
+	This will be the similar error if you try to connect directly with CLI without using
+	vEMan.
+
+	"Error: Server version unavailable at 'https://..."
+
+	Cause:
+	This is a minor issue which occured when Perl increased security of certain modules.
+	
+	Fix:
+	Change parameter to skip verification of SSL by editing https.pm of the LWP module.
+	
+	sudo nano /usr/share/perl5/LWP/Protocol/https.pm
+
+	Change the value from 1 to 0 on this line:
+
+	$ssl_opts{SSL_verify_mode} ||= 1;
+
+	The line will look like the one below after your modification.
+
+	$ssl_opts{SSL_verify_mode} ||= 0;
+
 
 Recommended versions
 --------------------
@@ -46,6 +83,12 @@ Recommended versions
     
     Other versions may work but if you encounter problems try to upgrade/downgrade
     to the above versions first.
+    
+    Note: If you installed the VMWare Workstation it will likely have included ovftools.
+    This will cause vEMan to display a notice dialog to inform that the version of ovftool
+    is unsupported for certain tasks. This is fine and does not affect the functionality
+    of vEMan if you do not plan to utilize ovf specific features. 
+    
 
 Variables
 ----------------
